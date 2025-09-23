@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum RecipeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RecipeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         UserRole @default(USER)
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  recipes           Recipe[]    @relation("RecipeAuthor")
+  approvedRecipes   Recipe[]    @relation("RecipeApprover")
+  comments          Comment[]
+  ratings           Rating[]
+  favoriteRecipes   Recipe[]    @relation("UserFavorites")
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  recipes Recipe[]
+
+  @@map("categories")
+}
+
+model Recipe {
+  id                 String           @id @default(cuid())
+  title              String
+  description        String?
+  ingredients        Json
+  instructions       Json
+  difficulty         RecipeDifficulty @default(EASY)
+  prepTime           Int              @map("prep_time") // in minutes
+  cookTime           Int              @map("cook_time") // in minutes
+  servings           Int              @default(1)
+  caloriesPerServing Int?             @map("calories_per_serving")
+  protein            Float?
+  carbs              Float?
+  fat                Float?
+  imageUrl           String?          @map("image_url")
+  status             RecipeStatus     @default(PENDING)
+  rejectionReason    String?          @map("rejection_reason")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  // Foreign keys
+  userId       String  @map("user_id")
+  categoryId   String  @map("category_id")
+  approvedById String? @map("approved_by_id")
+
+  // Relations
+  author        User      @relation("RecipeAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  category      Category  @relation(fields: [categoryId], references: [id])
+  approvedBy    User?     @relation("RecipeApprover", fields: [approvedById], references: [id])
+  comments      Comment[]
+  ratings       Rating[]
+  favoritedBy   User[]    @relation("UserFavorites")
+
+  @@map("recipes")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  recipeId String  @map("recipe_id")
+  userId   String  @map("user_id")
+  parentId String? @map("parent_id")
+
+  // Relations
+  recipe   Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  rating    Int // 1-5 stars
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  recipeId String @map("recipe_id")
+  userId   String @map("user_id")
+
+  // Relations
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, userId])
+  @@map("ratings")
+}
