@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  CHEF
+  ADMIN
+}
+
+enum RecipeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  DESSERT
+}
+
+enum DietType {
+  NONE
+  VEGETARIAN
+  VEGAN
+  GLUTEN_FREE
+  KETO
+  PALEO
+  LOW_CARB
+  DAIRY_FREE
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum CuisineType {
+  ITALIAN
+  CHINESE
+  MEXICAN
+  INDIAN
+  JAPANESE
+  MEDITERRANEAN
+  AMERICAN
+  FRENCH
+  THAI
+  OTHER
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  firstName         String
+  lastName          String
+  role              UserRole  @default(USER)
+  isEmailVerified   Boolean   @default(false)
+  termsAccepted     Boolean   @default(false)
+  failedLoginAttempts Int     @default(0)
+  blockedUntil      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  recipes           Recipe[]
+  comments          Comment[]
+  ratings           Rating[]
+  sessions          Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Recipe {
+  id               String          @id @default(cuid())
+  title            String
+  description      String
+  ingredients      String[]
+  instructions     String[]
+  prepTime         Int             // in minutes
+  cookTime         Int             // in minutes
+  servings         Int
+  difficulty       DifficultyLevel
+  mealType         MealType
+  dietType         DietType
+  cuisineType      CuisineType
+  mainIngredient   String
+  imageUrl         String?
+  status           RecipeStatus    @default(PENDING)
+  rejectionReason  String?
+  averageRating    Float           @default(0)
+  totalRatings     Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  
+  // Foreign Keys
+  authorId         String
+
+  // Relations
+  author           User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments         Comment[]
+  ratings          Rating[]
+
+  @@map("recipes")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign Keys
+  userId    String
+  recipeId  String
+
+  // Relations
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  value     Int      @db.SmallInt // 1-5 stars
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign Keys
+  userId    String
+  recipeId  String
+
+  // Relations
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  // Ensure one rating per user per recipe
+  @@unique([userId, recipeId])
+  @@map("ratings")
+}
