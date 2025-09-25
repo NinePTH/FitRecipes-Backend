@@ -40,7 +40,7 @@ export const authMiddleware = async (
     );
   }
 };
-
+let ok = 1
 /**
  * Authorization middleware for specific roles
  */
