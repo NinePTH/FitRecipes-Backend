@@ -50,7 +50,7 @@ export const verifyToken = (token: string): AuthenticatedUser | null => {
       lastName: decoded.lastName || '',
       role: decoded.role,
     };
-  } catch {
+  } catch (error) {
     return null;
   }
 };
