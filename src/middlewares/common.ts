@@ -11,7 +11,7 @@ export const errorHandler = async (
   try {
     await next();
   } catch (error) {
-    // TODO: Replace with proper logging system in production
+    console.error('Application Error:', error);
 
     if (error instanceof Error) {
       return c.json(createApiResponse('error', null, error.message), 500);

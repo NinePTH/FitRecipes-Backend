@@ -33,7 +33,7 @@ export const authMiddleware = async (
     // Add user to context
     c.set('user', user);
     await next();
-  } catch {
+  } catch (error) {
     return c.json(
       createApiResponse('error', null, 'Authentication failed'),
       401
