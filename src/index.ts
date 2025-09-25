@@ -63,7 +63,7 @@ app.get('/health', async c => {
   );
 });
 
-console.log(ijaijsdisja)
+console.log(ijaijsdisjaasd)
 
 // API versioning
 const v1 = new Hono();
