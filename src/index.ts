@@ -56,12 +56,14 @@ app.use(
 app.get('/health', async c => {
   return c.json(
     createApiResponse('success', {
-      status: 'healthy',
+      status: 'healthyzzzzzzzz',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     })
   );
 });
+
+console.log(ijaijsdisja)
 
 // API versioning
 const v1 = new Hono();
