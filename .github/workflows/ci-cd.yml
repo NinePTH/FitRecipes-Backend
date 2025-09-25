@@ -164,20 +164,40 @@ jobs:
             fi
             
             if echo "$DEPLOY_RESPONSE" | grep -q "id"; then
+              # Extract key information from response
               DEPLOY_ID=$(echo "$DEPLOY_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 | head -1)
-              echo "✅ Deployment triggered successfully"
+              COMMIT_ID=$(echo "$DEPLOY_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 | tail -1)
+              STATUS=$(echo "$DEPLOY_RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+              CREATED_AT=$(echo "$DEPLOY_RESPONSE" | grep -o '"createdAt":"[^"]*"' | cut -d'"' -f4)
+              
+              echo "✅ Deployment triggered successfully!"
+              echo "=================================="
               echo "🆔 Deploy ID: $DEPLOY_ID"
-              echo "📊 Response: $DEPLOY_RESPONSE"
+              echo "� Commit: ${COMMIT_ID:0:8}"
+              echo "�📊 Status: $STATUS"
+              echo "⏰ Started: $CREATED_AT"
+              echo "🔗 Monitor: https://dashboard.render.com/web/$RENDER_SERVICE_ID"
+              echo "=================================="
             elif [ "$DEPLOY_RESPONSE" = "failed" ]; then
-              echo "❌ Deployment API call failed"
-              echo "🔍 Check your RENDER_SERVICE_ID and RENDER_API_KEY secrets"
-              echo "📋 Service ID should be like: srv-xxxxxxxxxxxxxxxxxxxxx"
-              echo "🔑 API Key should be like: rnd_xxxxxxxxxxxxxxxxxxxxx"
+              echo "❌ Deployment API Call Failed"
+              echo "=============================="
+              echo "🔍 Check your GitHub secrets:"
+              echo "   • RENDER_SERVICE_ID (srv-xxxxx...)"
+              echo "   • RENDER_API_KEY (rnd_xxxxx...)"
+              echo "� Go to: Settings → Secrets → Actions"
+              echo "=============================="
             else
-              echo "⚠️  Unexpected deployment response"
-              echo "📊 Full Response: $DEPLOY_RESPONSE"
-              echo "🔍 This might indicate API changes or service issues"
+              echo "⚠️  Unexpected Deployment Response"
+              echo "=================================="
+              echo "📊 Raw Response:"
+              echo "$DEPLOY_RESPONSE" | sed 's/,/,\n   /g' | sed 's/{/{\n   /' | sed 's/}/\n}/'
+              echo ""
+              echo "🔍 Possible causes:"
+              echo "   • API format changes"
+              echo "   • Service temporarily unavailable"
+              echo "   • Network connectivity issues"
               echo "🔄 Continuing with verification..."
+              echo "=================================="
             fi
           fi
 
@@ -318,17 +338,20 @@ jobs:
         env:
           RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
         run: |
-          echo "🎉 CONTROLLED DEPLOYMENT SUCCESSFUL!"
-          echo "==================================="
-          echo "✅ All quality gates passed"
-          echo "✅ Deployment completed successfully"
-          echo "✅ Health checks verified"
-          echo "✅ Production is safe and updated"
+          echo "🎉 DEPLOYMENT SUCCESSFUL!"
+          echo "========================"
+          echo "✅ Quality Gates: PASSED"
+          echo "✅ Build & Deploy: COMPLETED"
+          echo "✅ Health Checks: VERIFIED"
+          echo "✅ Production: UPDATED & SAFE"
           echo ""
+          echo "🌐 Your FitRecipes Backend is LIVE!"
+          echo "========================"
           if [ -n "$RENDER_APP_URL" ]; then
-            echo "🌐 Live App: $RENDER_APP_URL"
-            echo "🏥 Health Check: $RENDER_APP_URL/health"
-            echo "🔗 API Endpoint: $RENDER_APP_URL/api/v1"
+            echo "🔗 App URL: $RENDER_APP_URL"
+            echo "🏥 Health: $RENDER_APP_URL/health"
+            echo "� API: $RENDER_APP_URL/api/v1"
+          else
+            echo "💡 Add RENDER_APP_URL secret for direct links"
           fi
-          echo ""
-          echo "🚀 Your FitRecipes Backend is now live with the latest changes!"
+          echo "========================"
