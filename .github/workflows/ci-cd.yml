@@ -201,17 +201,11 @@ jobs:
             fi
           fi
 
-      - name: Wait for Deployment Completion
-        run: |
-          echo "⏳ Waiting for deployment to complete..."
-          echo "🔄 Allowing time for service restart and health check initialization"
-          sleep 90  # Extended wait for controlled deployment
-
-      - name: Health Check - Wait for Service
+      - name: Verify Deployment Health
         env:
           RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
         run: |
-          echo "🏥 Performing health checks..."
+          echo "🏥 Verifying deployment completion via health checks..."
           
           # Configure health check parameters
           MAX_ATTEMPTS=30
