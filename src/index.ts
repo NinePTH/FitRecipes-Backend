@@ -92,6 +92,3 @@ export default {
 console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
 console.log(`📊 Health check: http://localhost:${config.port}/health`);
 console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);
-
-// Intentional linting error to test CI/CD pipeline
-undefinedTestVariable;
