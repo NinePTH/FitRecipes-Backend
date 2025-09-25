@@ -11,7 +11,11 @@ export const errorHandler = async (
   try {
     await next();
   } catch (error) {
-    console.error('Application Error:', error);
+    // Log error for debugging (in production, this would be handled by proper logging)
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.error('Application Error:', error);
+    }
 
     if (error instanceof Error) {
       return c.json(createApiResponse('error', null, error.message), 500);

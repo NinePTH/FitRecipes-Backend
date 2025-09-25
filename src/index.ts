@@ -63,8 +63,6 @@ app.get('/health', async c => {
   );
 });
 
-console.log(ijaijsdisjaasd)
-
 // API versioning
 const v1 = new Hono();
 
@@ -91,6 +89,9 @@ export default {
 
 // Start server if this file is run directly
 // Note: Bun will handle the server startup
+// eslint-disable-next-line no-console
 console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
+// eslint-disable-next-line no-console
 console.log(`📊 Health check: http://localhost:${config.port}/health`);
+// eslint-disable-next-line no-console
 console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);
