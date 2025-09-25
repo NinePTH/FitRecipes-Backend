@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "db:generate": "prisma generate",

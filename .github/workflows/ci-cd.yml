@@ -41,6 +41,9 @@ jobs:
       - name: Run linting
         run: bun run lint
 
+      - name: Run TypeScript check
+        run: bun run type-check
+
       - name: Run format check
         run: bun run format:check
 
