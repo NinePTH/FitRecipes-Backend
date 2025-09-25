@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint src/**/*.ts --max-warnings 0",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit",
     "format": "prettier --write src/**/*.ts",
