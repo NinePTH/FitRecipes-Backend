@@ -91,6 +91,8 @@ export default {
 // Note: Bun will handle the server startup
 // eslint-disable-next-line no-console
 console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
+// Intentional linting error to test CI/CD
+undefinedVariable;
 // eslint-disable-next-line no-console
 console.log(`📊 Health check: http://localhost:${config.port}/health`);
 // eslint-disable-next-line no-console
