@@ -56,14 +56,15 @@ app.use(
 app.get('/health', async c => {
   return c.json(
     createApiResponse('success', {
-      status: 'healthyzzzzzzzz',
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
+      environment: config.nodeEnv,
+      database: 'connected',
+      storage: 'connected',
     })
   );
 });
-
-console.log(ijaijsdisjaasd)
 
 // API versioning
 const v1 = new Hono();
@@ -91,6 +92,8 @@ export default {
 
 // Start server if this file is run directly
 // Note: Bun will handle the server startup
-console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
-console.log(`📊 Health check: http://localhost:${config.port}/health`);
-console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);
+if (config.nodeEnv === 'development') {
+  console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
+  console.log(`📊 Health check: http://localhost:${config.port}/health`);
+  console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);
+}
