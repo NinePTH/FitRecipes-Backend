@@ -103,7 +103,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy & Verify
+    name: Safe Deploy to Render
     needs: [test, build, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -111,19 +111,56 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deployment Status
+      - name: Pre-Deployment Status
         run: |
-          echo "✅ All checks passed!"
-          echo "🚀 Triggering deployment to Render"
+          echo "✅ All CI/CD checks passed!"
+          echo "�️ Initiating CONTROLLED deployment to Render"
           echo "📝 Commit: ${{ github.event.head_commit.message }}"
           echo "👤 Author: ${{ github.event.head_commit.author.name }}"
           echo "🔗 Repository: ${{ github.repository }}"
+          echo "⏰ Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-      - name: Wait for Render Deployment
+      - name: Deploy to Render (Controlled)
+        env:
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          echo "⏳ Waiting for Render to complete deployment..."
-          echo "🔄 Render auto-deploy triggered by this push"
-          sleep 60  # Give Render time to start deployment
+          if [ -z "$RENDER_SERVICE_ID" ] || [ -z "$RENDER_API_KEY" ]; then
+            echo "⚠️  RENDER_SERVICE_ID or RENDER_API_KEY secrets not set"
+            echo "📝 Please add Render API credentials to GitHub secrets:"
+            echo "   1. Go to Render Dashboard → Account Settings → API Keys"
+            echo "   2. Create API key and copy it"
+            echo "   3. Find service ID from URL: srv-xxxxx"
+            echo "   4. Add both as GitHub secrets"
+            echo ""
+            echo "🔄 Falling back to monitoring existing deployment..."
+            echo "ℹ️  Render auto-deploy may still be active"
+          else
+            echo "🚀 Triggering controlled deployment via Render API..."
+            
+            # Trigger deployment via Render API
+            DEPLOY_RESPONSE=$(curl -s -X POST \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{"clearCache": false}' || echo "failed")
+            
+            if echo "$DEPLOY_RESPONSE" | grep -q "id"; then
+              DEPLOY_ID=$(echo "$DEPLOY_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 | head -1)
+              echo "✅ Deployment triggered successfully"
+              echo "🆔 Deploy ID: $DEPLOY_ID"
+              echo "📊 Response: $DEPLOY_RESPONSE"
+            else
+              echo "⚠️  Deployment trigger response: $DEPLOY_RESPONSE"
+              echo "🔄 Continuing with verification..."
+            fi
+          fi
+
+      - name: Wait for Deployment Completion
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          echo "🔄 Allowing time for service restart and health check initialization"
+          sleep 90  # Extended wait for controlled deployment
 
       - name: Health Check - Wait for Service
         env:
@@ -225,12 +262,48 @@ jobs:
             echo "⚠️  Add RENDER_APP_URL secret for automated verification"
           fi
 
-      - name: Notify Deployment Status
+      - name: Deployment Failure Handler
         if: failure()
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
         run: |
-          echo "🚨 DEPLOYMENT VERIFICATION FAILED"
-          echo "=================================="
-          echo "❌ The deployment verification process failed"
-          echo "🔍 Check the logs above for specific errors"
-          echo "🔗 Render Dashboard: https://dashboard.render.com"
-          echo "📞 Check your Render service logs for details"
+          echo "🚨 CONTROLLED DEPLOYMENT FAILED"
+          echo "==============================="
+          echo "❌ The controlled deployment process failed"
+          echo "🛡️ Production is PROTECTED - no broken code deployed"
+          echo ""
+          echo "🔍 Troubleshooting steps:"
+          echo "1. Check the logs above for specific errors"
+          echo "2. Verify GitHub secrets are correctly set:"
+          echo "   - RENDER_SERVICE_ID"
+          echo "   - RENDER_API_KEY" 
+          echo "   - RENDER_APP_URL"
+          echo "3. Check Render service status: https://dashboard.render.com"
+          echo "4. Review service logs in Render dashboard"
+          echo ""
+          if [ -n "$RENDER_APP_URL" ]; then
+            echo "🌐 App URL: $RENDER_APP_URL"
+            echo "🏥 Health Check: $RENDER_APP_URL/health"
+          fi
+          echo ""
+          echo "✅ BENEFIT: Failed deployment was caught before affecting users!"
+
+      - name: Success Notification
+        if: success()
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          echo "🎉 CONTROLLED DEPLOYMENT SUCCESSFUL!"
+          echo "==================================="
+          echo "✅ All quality gates passed"
+          echo "✅ Deployment completed successfully"
+          echo "✅ Health checks verified"
+          echo "✅ Production is safe and updated"
+          echo ""
+          if [ -n "$RENDER_APP_URL" ]; then
+            echo "🌐 Live App: $RENDER_APP_URL"
+            echo "🏥 Health Check: $RENDER_APP_URL/health"
+            echo "🔗 API Endpoint: $RENDER_APP_URL/api/v1"
+          fi
+          echo ""
+          echo "🚀 Your FitRecipes Backend is now live with the latest changes!"

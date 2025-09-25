@@ -38,4 +38,4 @@ services:
       - key: CORS_ORIGIN
         value: "*"
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeploy: false  # Controlled by GitHub Actions for safety
