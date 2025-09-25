@@ -142,19 +142,41 @@ jobs:
             echo "🚀 Triggering controlled deployment via Render API..."
             
             # Trigger deployment via Render API
-            DEPLOY_RESPONSE=$(curl -s -X POST \
-              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
-              -H "Authorization: Bearer $RENDER_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d '{"clearCache": false}' || echo "failed")
+            echo "🔍 Testing API credentials first..."
+            
+            # Test API access
+            TEST_RESPONSE=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID" || echo "failed")
+            
+            if echo "$TEST_RESPONSE" | grep -q "name"; then
+              echo "✅ API credentials valid"
+              
+              # Trigger deployment with correct payload
+              DEPLOY_RESPONSE=$(curl -s -X POST \
+                "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+                -H "Authorization: Bearer $RENDER_API_KEY" \
+                -H "Content-Type: application/json" \
+                --data-raw '{}' || echo "failed")
+            else
+              echo "❌ API credentials invalid or service not found"
+              echo "📊 Test Response: $TEST_RESPONSE"
+              DEPLOY_RESPONSE="failed"
+            fi
             
             if echo "$DEPLOY_RESPONSE" | grep -q "id"; then
               DEPLOY_ID=$(echo "$DEPLOY_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 | head -1)
               echo "✅ Deployment triggered successfully"
               echo "🆔 Deploy ID: $DEPLOY_ID"
               echo "📊 Response: $DEPLOY_RESPONSE"
+            elif [ "$DEPLOY_RESPONSE" = "failed" ]; then
+              echo "❌ Deployment API call failed"
+              echo "🔍 Check your RENDER_SERVICE_ID and RENDER_API_KEY secrets"
+              echo "📋 Service ID should be like: srv-xxxxxxxxxxxxxxxxxxxxx"
+              echo "🔑 API Key should be like: rnd_xxxxxxxxxxxxxxxxxxxxx"
             else
-              echo "⚠️  Deployment trigger response: $DEPLOY_RESPONSE"
+              echo "⚠️  Unexpected deployment response"
+              echo "📊 Full Response: $DEPLOY_RESPONSE"
+              echo "🔍 This might indicate API changes or service issues"
               echo "🔄 Continuing with verification..."
             fi
           fi
