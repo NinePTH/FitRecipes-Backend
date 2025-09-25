@@ -103,20 +103,134 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Status
+    name: Deploy & Verify
     needs: [test, build, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Deployment Status
         run: |
           echo "✅ All checks passed!"
-          echo "🚀 Ready for deployment to Render"
+          echo "🚀 Triggering deployment to Render"
           echo "📝 Commit: ${{ github.event.head_commit.message }}"
           echo "👤 Author: ${{ github.event.head_commit.author.name }}"
           echo "🔗 Repository: ${{ github.repository }}"
-          echo ""
-          echo "Manual deployment steps:"
-          echo "1. Go to your Render dashboard"
-          echo "2. Your service will auto-deploy from this push"
-          echo "3. Monitor the deployment logs"
+
+      - name: Wait for Render Deployment
+        run: |
+          echo "⏳ Waiting for Render to complete deployment..."
+          echo "🔄 Render auto-deploy triggered by this push"
+          sleep 60  # Give Render time to start deployment
+
+      - name: Health Check - Wait for Service
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          echo "🏥 Performing health checks..."
+          
+          # Configure health check parameters
+          MAX_ATTEMPTS=30
+          WAIT_TIME=10
+          
+          if [ -z "$RENDER_APP_URL" ]; then
+            echo "⚠️  RENDER_APP_URL secret not set"
+            echo "📝 Please add your Render app URL to GitHub secrets"
+            echo "🔗 Format: https://your-app-name.onrender.com"
+            echo "ℹ️  Skipping automated health checks for now"
+            exit 0
+          fi
+          
+          HEALTH_URL="$RENDER_APP_URL/health"
+          
+          echo "🎯 Health check URL: $HEALTH_URL"
+          echo "⏱️  Max attempts: $MAX_ATTEMPTS (${MAX_ATTEMPTS}0 seconds timeout)"
+          
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "🔄 Attempt $i/$MAX_ATTEMPTS..."
+            
+            if curl -f -s --max-time 10 "$HEALTH_URL" > /dev/null 2>&1; then
+              echo "✅ Health check passed!"
+              echo "🎉 Deployment verified successfully"
+              break
+            else
+              if [ $i -eq $MAX_ATTEMPTS ]; then
+                echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+                echo "🚨 Deployment might have issues"
+                exit 1
+              else
+                echo "⏳ Service not ready yet, waiting ${WAIT_TIME}s..."
+                sleep $WAIT_TIME
+              fi
+            fi
+          done
+
+      - name: Verify API Endpoints
+        if: success()
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          if [ -z "$RENDER_APP_URL" ]; then
+            echo "⚠️  Skipping API verification - RENDER_APP_URL not set"
+            exit 0
+          fi
+          
+          BASE_URL="$RENDER_APP_URL"
+          
+          echo "🧪 Testing API endpoints..."
+          
+          # Test health endpoint and extract response
+          echo "📍 Testing /health endpoint..."
+          HEALTH_RESPONSE=$(curl -s "$BASE_URL/health" || echo "failed")
+          
+          if echo "$HEALTH_RESPONSE" | grep -q "healthy"; then
+            echo "✅ Health endpoint working"
+            echo "📊 Response: $HEALTH_RESPONSE"
+          else
+            echo "❌ Health endpoint failed"
+            echo "📊 Response: $HEALTH_RESPONSE"
+          fi
+          
+          # Test API base endpoint
+          echo "📍 Testing /api/v1 endpoint..."
+          API_RESPONSE=$(curl -s -w "%{http_code}" "$BASE_URL/api/v1" || echo "failed")
+          
+          if [[ "$API_RESPONSE" == *"200"* ]] || [[ "$API_RESPONSE" == *"404"* ]]; then
+            echo "✅ API endpoint accessible"
+          else
+            echo "⚠️  API endpoint response: $API_RESPONSE"
+          fi
+
+      - name: Deployment Summary
+        if: always()
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          echo "📋 Deployment Summary"
+          echo "===================="
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "🌿 Branch: ${{ github.ref_name }}"
+          echo "👤 Author: ${{ github.event.head_commit.author.name }}"
+          echo "💬 Message: ${{ github.event.head_commit.message }}"
+          echo "⏰ Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          
+          if [ -n "$RENDER_APP_URL" ]; then
+            echo "🚀 App URL: $RENDER_APP_URL"
+            echo "🏥 Health: $RENDER_APP_URL/health"
+            echo "🔗 API: $RENDER_APP_URL/api/v1"
+          else
+            echo "⚠️  Add RENDER_APP_URL secret for automated verification"
+          fi
+
+      - name: Notify Deployment Status
+        if: failure()
+        run: |
+          echo "🚨 DEPLOYMENT VERIFICATION FAILED"
+          echo "=================================="
+          echo "❌ The deployment verification process failed"
+          echo "🔍 Check the logs above for specific errors"
+          echo "🔗 Render Dashboard: https://dashboard.render.com"
+          echo "📞 Check your Render service logs for details"
