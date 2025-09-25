@@ -67,21 +67,14 @@ for (const envVar of requiredEnvVars) {
 
 // Log configuration in development
 if (config.nodeEnv === 'development') {
-  // eslint-disable-next-line no-console
   console.log('🔧 Configuration loaded:');
-  // eslint-disable-next-line no-console
   console.log(`   Environment: ${config.nodeEnv}`);
-  // eslint-disable-next-line no-console
   console.log(`   Port: ${config.port}`);
-  // eslint-disable-next-line no-console
   console.log(
     `   Database: ${config.database.url.split('@')[1]?.split('/')[0] || 'Local PostgreSQL'}`
   );
-  // eslint-disable-next-line no-console
   console.log(`   Storage Bucket: ${config.supabase.storageBucket}`);
-  // eslint-disable-next-line no-console
   console.log(`   CORS Origin: ${config.security.corsOrigin}`);
-  // eslint-disable-next-line no-console
   console.log(
     `   Rate Limit: ${config.security.rateLimitMaxRequests} requests per ${config.security.rateLimitWindowMs / 60000} minutes`
   );
