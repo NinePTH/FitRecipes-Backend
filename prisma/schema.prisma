@@ -62,24 +62,33 @@ enum CuisineType {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  password          String
-  firstName         String
-  lastName          String
-  role              UserRole  @default(USER)
-  isEmailVerified   Boolean   @default(false)
-  termsAccepted     Boolean   @default(false)
-  failedLoginAttempts Int     @default(0)
-  blockedUntil      DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String?   // Optional for OAuth users
+  firstName             String
+  lastName              String
+  role                  UserRole  @default(USER)
+  isEmailVerified       Boolean   @default(false)
+  termsAccepted         Boolean   @default(false)
+  failedLoginAttempts   Int       @default(0)
+  blockedUntil          DateTime?
+  
+  // Password reset fields
+  resetToken            String?
+  resetTokenExpiresAt   DateTime?
+  
+  // OAuth fields
+  googleId              String?   @unique
+  oauthProvider         String?   // 'google', etc.
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   // Relations
-  recipes           Recipe[]
-  comments          Comment[]
-  ratings           Rating[]
-  sessions          Session[]
+  recipes               Recipe[]
+  comments              Comment[]
+  ratings               Rating[]
+  sessions              Session[]
 
   @@map("users")
 }

@@ -41,11 +41,14 @@ src/
 
 ### Security Implementation
 - **Authentication**: JWT tokens with role-based access control (USER, CHEF, ADMIN)
+- **OAuth Integration**: Google OAuth 2.0 with @hono/oauth-providers
 - **Password Security**: bcrypt hashing with configurable rounds
+- **Password Reset**: Secure token-based reset with email delivery
 - **Rate Limiting**: 100 requests per 15 minutes per IP (configurable)
 - **Input Sanitization**: Zod validation + custom sanitization helpers
 - **Session Management**: Database-stored sessions with expiration
 - **CORS**: Configurable origins with credentials support
+- **Email Security**: Domain validation and secure token generation
 
 ### Deployment & Scaling
 - **Containerization**: Multi-stage Dockerfile optimized for Bun runtime
@@ -57,21 +60,27 @@ src/
 ## 🔌 API Endpoints Structure
 
 ### Authentication (`/api/v1/auth`)
-**Status**: Placeholder routes created, implementation needed
-- `POST /register` - User registration with email verification
-- `POST /login` - User login with failed attempt tracking
-- `POST /logout` - Secure session termination
-- `POST /forgot-password` - Password reset token generation
-- `POST /reset-password` - Password reset with token validation
-- `GET /verify-email/:token` - Email verification
-- `GET /me` - Get current authenticated user profile
+**Status**: Core authentication implemented, OAuth and password reset needed
+- `POST /register` - User registration with email verification ✅
+- `POST /login` - User login with failed attempt tracking ✅
+- `POST /logout` - Secure session termination ✅
+- `POST /forgot-password` - Password reset token generation (TODO)
+- `POST /reset-password` - Password reset with token validation (TODO)
+- `GET /verify-email/:token` - Email verification (TODO)
+- `GET /me` - Get current authenticated user profile ✅
+- `GET /google` - Google OAuth initiation (TODO)
+- `GET /google/callback` - Google OAuth callback handler (TODO)
+- `POST /google/mobile` - Google OAuth for mobile apps (TODO)
 
 **Implementation Notes**:
-- Use `registerSchema` and `loginSchema` from `src/utils/validation.ts`
+- Use `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` from `src/utils/validation.ts`
 - Implement in `src/controllers/authController.ts` and `src/services/authService.ts`
 - Hash passwords using `hashPassword()` from `src/utils/auth.ts`
 - Create JWT tokens using `generateToken()` utility
 - Store sessions in database using Session model
+- Google OAuth: Use `@hono/oauth-providers` with Google provider
+- Password reset: Generate secure tokens, store in database with expiration
+- Email service: Use Resend or Nodemailer for password reset emails
 
 ### Recipe Management (`/api/v1/recipes`)
 **Status**: Placeholder routes created, implementation needed
@@ -116,6 +125,14 @@ src/
 - Ensure unique constraint: one rating per user per recipe
 - Sanitize comment content for security
 
+## Coding Style
+- Do **NOT** use class-based patterns unless strictly required.
+- Hono code should follow its idiomatic style:
+  - Define routes directly with `app.get`, `app.post`, etc.
+  - Group logic using functions and separate files (services, routes, utils).
+  - Use simple function exports instead of classes for controllers.
+
+
 ## 🚀 Implementation Guidelines
 
 ### Database Schema (Prisma)
@@ -146,7 +163,17 @@ src/
 - `createPaginatedResponse(data, total, pagination)` - Paginated responses
 
 **Validation** (`src/utils/validation.ts`):
-- Zod schemas for all endpoints: `registerSchema`, `loginSchema`, `recipeSchema`, etc.
+- Zod schemas for all endpoints: `registerSchema`, `loginSchema`, `recipeSchema`, `forgotPasswordSchema`, `resetPasswordSchema`, etc.
+
+**Email Service** (`src/utils/email.ts`):
+- `sendEmail(to, subject, content)` - Email delivery via Resend/Nodemailer
+- `sendPasswordResetEmail(email, token)` - Password reset email template
+- `sendVerificationEmail(email, token)` - Email verification template
+
+**OAuth Utilities** (`src/utils/oauth.ts`):
+- `googleOAuth` - Google OAuth provider configuration
+- `handleOAuthCallback(code, state)` - OAuth callback processing
+- `createOrUpdateOAuthUser(profile)` - User creation/update from OAuth data
 
 ### Middleware Stack
 **Applied in order** (`src/index.ts`):
@@ -199,10 +226,12 @@ src/
 
 ## 📋 Next Implementation Priorities
 
-1. **Authentication Service** - Implement `src/services/authService.ts`
-2. **Recipe Search** - High-performance multi-ingredient search
-3. **File Upload Handler** - Image processing and Supabase integration
-4. **Recipe Approval Workflow** - Admin management system
-5. **Community Features** - Comments and ratings system
-6. **Performance Optimization** - Caching and database indexing
-7. **Monitoring & Logging** - Enhanced observability
+1. **Password Reset System** - Implement secure token-based password reset with email delivery
+2. **Google OAuth Integration** - Implement OAuth 2.0 authentication flow
+3. **Email Verification** - Implement email verification system
+4. **Recipe Search** - High-performance multi-ingredient search
+5. **File Upload Handler** - Image processing and Supabase integration
+6. **Recipe Approval Workflow** - Admin management system
+7. **Community Features** - Comments and ratings system
+8. **Performance Optimization** - Caching and database indexing
+9. **Monitoring & Logging** - Enhanced observability

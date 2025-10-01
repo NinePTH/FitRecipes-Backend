@@ -56,7 +56,7 @@ app.use(
 app.get('/health', async c => {
   return c.json(
     createApiResponse('success', {
-      status: 'healthyzzzzzzzz',
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     })
@@ -81,6 +81,9 @@ app.route('/api/v1', v1);
 
 // 404 handler
 app.notFound(notFoundHandler);
+
+// Export app for testing
+export { app };
 
 export default {
   port: config.port,

@@ -22,6 +22,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
+    "db:seed": "bun run scripts/create-test-users.ts",
     "docker:build": "docker build -t fitrecipes-backend .",
     "docker:run": "docker-compose up -d",
     "docker:down": "docker-compose down"
@@ -39,11 +40,13 @@
   "license": "MIT",
   "dependencies": {
     "@hono/node-server": "^1.12.0",
+    "@hono/oauth-providers": "^0.8.5",
     "@prisma/client": "^5.19.1",
     "@supabase/supabase-js": "^2.45.4",
     "bcryptjs": "^2.4.3",
     "hono": "^4.5.11",
     "jsonwebtoken": "^9.0.2",
+    "resend": "^6.1.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

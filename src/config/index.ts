@@ -10,6 +10,10 @@ interface Config {
     serviceRoleKey: string;
     storageBucket: string;
   };
+  googleOAuth: {
+    clientId: string;
+    clientSecret: string;
+  };
   jwt: {
     secret: string;
     expiresIn: string;
@@ -33,6 +37,10 @@ const config: Config = {
     anonKey: process.env.SUPABASE_ANON_KEY!,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     storageBucket: process.env.SUPABASE_STORAGE_BUCKET || 'recipe-images-dev',
+  },
+  googleOAuth: {
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   },
   jwt: {
     secret: process.env.JWT_SECRET!,
