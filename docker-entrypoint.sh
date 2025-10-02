@@ -1,21 +1,22 @@
 #!/bin/sh
 set -e
 
-echo "🔄 Syncing database schema..."
+echo "🔄 Running database migrations..."
 
 # Check if DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-  echo "⚠️  DATABASE_URL not set, skipping database sync"
+  echo "⚠️  DATABASE_URL not set, skipping migrations"
 else
-  # Run Prisma DB push to sync schema with database
-  # Using --accept-data-loss flag for automated deployments
-  # This is safe as it only applies schema changes
-  if bun run db:push --accept-data-loss --skip-generate; then
-    echo "✅ Database schema synced successfully"
+  # Run Prisma Migrate Deploy to apply pending migrations
+  # This applies all migration files from prisma/migrations/
+  # Safe for production - uses versioned SQL files
+  if bun run db:migrate:deploy; then
+    echo "✅ Database migrations applied successfully"
   else
-    echo "⚠️  Database sync encountered an issue"
-    echo "ℹ️  This might be due to no changes needed or connectivity issues"
-    echo "🔄 Continuing with application startup..."
+    echo "❌ Database migration failed!"
+    echo "ℹ️  Check migration files and database connectivity"
+    echo "� Stopping deployment - migrations must succeed"
+    exit 1
   fi
 fi
 
