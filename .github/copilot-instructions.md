@@ -402,8 +402,14 @@ SUPABASE_BUCKET_NAME=recipe-images
 ```bash
 NODE_ENV=development  # development | staging | production
 PORT=3000
+
+# Development
 CORS_ORIGIN=http://localhost:5173  # Frontend URL
 FRONTEND_URL=http://localhost:5173  # For OAuth redirects
+
+# Production
+# CORS_ORIGIN=https://fitrecipes.vercel.app
+# FRONTEND_URL=https://fitrecipes.vercel.app
 ```
 
 ### Rate Limiting
@@ -494,6 +500,7 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 ## 📚 Additional Documentation
 
 Comprehensive guides available in `docs/`:
+- `PRODUCTION_DEPLOYMENT_CHECKLIST.md` - Complete production deployment checklist
 - `STAGING_SETUP.md` - Complete staging environment setup guide
 - `STAGING_QUICKSTART.md` - Quick reference for staging deployment
 - `DATABASE_SYNC_FIX.md` - Database schema synchronization explanation
