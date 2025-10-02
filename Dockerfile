@@ -42,14 +42,20 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
 COPY package.json ./
 
-# Create non-root user
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 appuser --gid 1001
+# Copy entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
-USER appuser
+# Create non-root user (but don't switch yet, entrypoint needs db access)
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 appuser --gid 1001 && \
+    chown -R appuser:appgroup /app
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
 
-CMD ["bun", "run", "start"]
+# Switch to non-root user
+USER appuser
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
