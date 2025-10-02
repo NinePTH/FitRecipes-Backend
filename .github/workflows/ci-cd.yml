@@ -104,9 +104,9 @@ jobs:
           format: 'table'
           exit-code: '0'
 
-  deploy:
+  deploy-production:
     runs-on: ubuntu-latest
-    name: Safe Deploy to Render
+    name: Deploy to Production (Main)
     needs: [test, build, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -349,3 +349,46 @@ jobs:
             echo "ðŸ’¡ Add RENDER_APP_URL secret for direct links"
           fi
           echo "========================"
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging (Develop)
+    needs: [test, build, security]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pre-Deployment Status
+        run: |
+          echo "âœ… All CI/CD checks passed!"
+          echo "í·ª Deploying to STAGING (FREE tier)"
+          echo "í³ Commit: ${{ github.event.head_commit.message }}"
+          echo "í±¤ Author: ${{ github.event.head_commit.author.name }}"
+          echo "í´— Repository: ${{ github.repository }}"
+          echo "â° Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: Deploy to Render (Staging)
+        env:
+          RENDER_STAGING_SERVICE_ID: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -z "$RENDER_STAGING_SERVICE_ID" ] || [ -z "$RENDER_API_KEY" ]; then
+            echo "âš ï¸  RENDER_STAGING_SERVICE_ID or RENDER_API_KEY secrets not set"
+            echo "í³ Render auto-deploy may still be active"
+          else
+            echo "íº€ Triggering staging deployment..."
+            curl -X POST "https://api.render.com/v1/services/$RENDER_STAGING_SERVICE_ID/deploys" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json"
+            echo "âœ… Staging deployment triggered!"
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## í·ª Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: develop" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Staging (FREE tier)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Deployment triggered" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
