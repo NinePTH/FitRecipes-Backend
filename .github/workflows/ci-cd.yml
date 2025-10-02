@@ -363,10 +363,10 @@ jobs:
       - name: Pre-Deployment Status
         run: |
           echo "âœ… All CI/CD checks passed!"
-          echo "í·ª Deploying to STAGING (FREE tier)"
-          echo "í³ Commit: ${{ github.event.head_commit.message }}"
-          echo "í±¤ Author: ${{ github.event.head_commit.author.name }}"
-          echo "í´— Repository: ${{ github.repository }}"
+          echo "ï¿½ï¿½ï¿½ Deploying to STAGING (FREE tier)"
+          echo "ï¿½ï¿½ï¿½ Commit: ${{ github.event.head_commit.message }}"
+          echo "ï¿½ï¿½ï¿½ Author: ${{ github.event.head_commit.author.name }}"
+          echo "ï¿½ï¿½ï¿½ Repository: ${{ github.repository }}"
           echo "â° Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
       - name: Deploy to Render (Staging)
@@ -376,9 +376,9 @@ jobs:
         run: |
           if [ -z "$RENDER_STAGING_SERVICE_ID" ] || [ -z "$RENDER_API_KEY" ]; then
             echo "âš ï¸  RENDER_STAGING_SERVICE_ID or RENDER_API_KEY secrets not set"
-            echo "í³ Render auto-deploy may still be active"
+            echo "ï¿½ï¿½ï¿½ Render auto-deploy may still be active"
           else
-            echo "íº€ Triggering staging deployment..."
+            echo "ï¿½ï¿½ï¿½ Triggering staging deployment..."
             curl -X POST "https://api.render.com/v1/services/$RENDER_STAGING_SERVICE_ID/deploys" \
               -H "Authorization: Bearer $RENDER_API_KEY" \
               -H "Content-Type: application/json"
@@ -387,7 +387,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "## í·ª Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## ï¿½ï¿½ï¿½ Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: develop" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: Staging (FREE tier)" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: Deployment triggered" >> $GITHUB_STEP_SUMMARY
