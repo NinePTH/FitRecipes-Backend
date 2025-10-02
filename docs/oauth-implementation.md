@@ -49,7 +49,7 @@ Add to your `.env` file:
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 BACKEND_URL=http://localhost:3000
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### **Step 3: Test the OAuth Flow**

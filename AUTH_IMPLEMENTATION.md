@@ -92,7 +92,7 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Application URLs
 BACKEND_URL=http://localhost:3000
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:5173
 ```
 
 ---

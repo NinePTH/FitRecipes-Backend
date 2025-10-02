@@ -402,8 +402,8 @@ SUPABASE_BUCKET_NAME=recipe-images
 ```bash
 NODE_ENV=development  # development | staging | production
 PORT=3000
-CORS_ORIGIN=http://localhost:3001  # Frontend URL
-FRONTEND_URL=http://localhost:3001  # For OAuth redirects
+CORS_ORIGIN=http://localhost:5173  # Frontend URL
+FRONTEND_URL=http://localhost:5173  # For OAuth redirects
 ```
 
 ### Rate Limiting
@@ -479,9 +479,17 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 **Check**: Verify the CORS middleware configuration in `src/index.ts`
 
 ### Database Migration Fails
-**Error**: P3005 "The database schema is not empty"  
-**Cause**: Trying to run migrations on existing database without baseline  
-**Solution**: Ensure migration files are in git and committed before deployment
+
+**Error P3005**: "The database schema is not empty"  
+**Cause**: Database has tables from `prisma db push`, but no migration history  
+**Solution**: Baseline the existing migration to mark it as applied  
+**Command**: `bunx prisma migrate resolve --applied "20251002145615_initial_schema"`  
+**Details**: See `docs/FIX_STAGING_MIGRATION_BASELINE.md` for step-by-step guide
+
+**Error**: "No migration found in prisma/migrations"  
+**Cause**: Migrations folder not in git (wrong .gitignore config)  
+**Solution**: Never add `prisma/migrations/` to .gitignore - migrations MUST be version controlled  
+**Details**: See `docs/MIGRATIONS_MUST_BE_IN_GIT.md`
 
 ## 📚 Additional Documentation
 
@@ -492,3 +500,4 @@ Comprehensive guides available in `docs/`:
 - `MIGRATIONS_GUIDE.md` - Complete Prisma migrations workflow
 - `MIGRATIONS_STATUS.md` - Current migration setup confirmation
 - `MIGRATIONS_MUST_BE_IN_GIT.md` - Critical: Why migrations must be version controlled
+- `FIX_STAGING_MIGRATION_BASELINE.md` - How to fix P3005 error on existing databases
