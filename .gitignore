@@ -38,8 +38,9 @@ pids/
 coverage/
 *.lcov
 
-# Prisma
-prisma/migrations/
+# Prisma - DO NOT ignore migrations! They must be in git for deployments
+# Only ignore the generated client
+# prisma/migrations/  ← REMOVED - migrations MUST be in git
 
 # Docker
 .dockerignore

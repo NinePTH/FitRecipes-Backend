@@ -20,6 +20,9 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Verify migrations are present
+RUN ls -la prisma/ && ls -la prisma/migrations/ || echo "No migrations folder!"
+
 # Generate Prisma Client
 RUN bun run db:generate
 
