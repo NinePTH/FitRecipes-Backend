@@ -358,6 +358,8 @@ git push
 
 ### Staging Environment
 - Separate `develop` branch deploys to staging (FREE tier on Render)
+- Backend URL: `https://fitrecipes-backend-staging.onrender.com`
+- Frontend: No staging frontend yet (uses localhost for development)
 - Uses same Docker configuration as production
 - Automatic deployment via GitHub Actions
 - Spins down after 15 minutes of inactivity (acceptable for staging)
@@ -404,12 +406,19 @@ NODE_ENV=development  # development | staging | production
 PORT=3000
 
 # Development
-CORS_ORIGIN=http://localhost:5173  # Frontend URL
-FRONTEND_URL=http://localhost:5173  # For OAuth redirects
+BACKEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173
+
+# Staging (on Render FREE tier)
+# BACKEND_URL=https://fitrecipes-backend-staging.onrender.com
+# FRONTEND_URL=http://localhost:5173  # No staging frontend yet
+# CORS_ORIGIN=http://localhost:5173
 
 # Production
-# CORS_ORIGIN=https://fitrecipes.vercel.app
+# BACKEND_URL=https://fitrecipes-backend.onrender.com
 # FRONTEND_URL=https://fitrecipes.vercel.app
+# CORS_ORIGIN=https://fitrecipes.vercel.app
 ```
 
 ### Rate Limiting
@@ -500,6 +509,7 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 ## 📚 Additional Documentation
 
 Comprehensive guides available in `docs/`:
+- `DEPLOYMENT_URLS.md` - Quick reference for all deployment environments and URLs
 - `PRODUCTION_DEPLOYMENT_CHECKLIST.md` - Complete production deployment checklist
 - `STAGING_SETUP.md` - Complete staging environment setup guide
 - `STAGING_QUICKSTART.md` - Quick reference for staging deployment

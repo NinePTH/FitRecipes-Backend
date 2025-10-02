@@ -23,7 +23,7 @@ This checklist ensures your FitRecipes backend is properly configured for produc
 #### Google OAuth
 - [ ] `GOOGLE_CLIENT_ID` (from Google Cloud Console)
 - [ ] `GOOGLE_CLIENT_SECRET` (from Google Cloud Console)
-- [ ] `GOOGLE_REDIRECT_URI=https://your-backend.onrender.com/api/v1/auth/google/callback`
+- [ ] `GOOGLE_REDIRECT_URI=https://fitrecipes-backend.onrender.com/api/v1/auth/google/callback`
 - [ ] Add authorized redirect URIs in Google Cloud Console
 
 #### Supabase Configuration
@@ -80,9 +80,9 @@ bunx prisma migrate status
 - [ ] OAuth 2.0 Client ID created
 - [ ] Authorized JavaScript origins:
   - `https://fitrecipes.vercel.app`
-  - `https://your-backend.onrender.com`
+  - `https://fitrecipes-backend.onrender.com`
 - [ ] Authorized redirect URIs:
-  - `https://your-backend.onrender.com/api/v1/auth/google/callback`
+  - `https://fitrecipes-backend.onrender.com/api/v1/auth/google/callback`
   - `https://fitrecipes.vercel.app/auth/callback` (if needed by frontend)
 - [ ] OAuth consent screen configured
 - [ ] Publishing status: In production (not testing)
@@ -216,10 +216,10 @@ git push origin main
 ### Verify Deployment
 ```bash
 # Check health endpoint
-curl https://your-backend.onrender.com/health
+curl https://fitrecipes-backend.onrender.com/health
 
 # Test authentication
-curl https://your-backend.onrender.com/api/v1/auth/me \
+curl https://fitrecipes-backend.onrender.com/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -268,10 +268,10 @@ EMAIL_FROM=noreply@fitrecipes.com
 # Google OAuth
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxx
-GOOGLE_REDIRECT_URI=https://your-backend.onrender.com/api/v1/auth/google/callback
+GOOGLE_REDIRECT_URI=https://fitrecipes-backend.onrender.com/api/v1/auth/google/callback
 
 # Application URLs
-BACKEND_URL=https://your-backend.onrender.com
+BACKEND_URL=https://fitrecipes-backend.onrender.com
 FRONTEND_URL=https://fitrecipes.vercel.app
 CORS_ORIGIN=https://fitrecipes.vercel.app
 
