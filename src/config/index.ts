@@ -10,6 +10,10 @@ interface Config {
     serviceRoleKey: string;
     storageBucket: string;
   };
+  googleOAuth: {
+    clientId: string;
+    clientSecret: string;
+  };
   jwt: {
     secret: string;
     expiresIn: string;
@@ -33,6 +37,10 @@ const config: Config = {
     anonKey: process.env.SUPABASE_ANON_KEY!,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     storageBucket: process.env.SUPABASE_STORAGE_BUCKET || 'recipe-images-dev',
+  },
+  googleOAuth: {
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   },
   jwt: {
     secret: process.env.JWT_SECRET!,
@@ -67,14 +75,21 @@ for (const envVar of requiredEnvVars) {
 
 // Log configuration in development
 if (config.nodeEnv === 'development') {
+  // eslint-disable-next-line no-console
   console.log('🔧 Configuration loaded:');
+  // eslint-disable-next-line no-console
   console.log(`   Environment: ${config.nodeEnv}`);
+  // eslint-disable-next-line no-console
   console.log(`   Port: ${config.port}`);
+  // eslint-disable-next-line no-console
   console.log(
     `   Database: ${config.database.url.split('@')[1]?.split('/')[0] || 'Local PostgreSQL'}`
   );
+  // eslint-disable-next-line no-console
   console.log(`   Storage Bucket: ${config.supabase.storageBucket}`);
+  // eslint-disable-next-line no-console
   console.log(`   CORS Origin: ${config.security.corsOrigin}`);
+  // eslint-disable-next-line no-console
   console.log(
     `   Rate Limit: ${config.security.rateLimitMaxRequests} requests per ${config.security.rateLimitWindowMs / 60000} minutes`
   );

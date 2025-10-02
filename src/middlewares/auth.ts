@@ -1,6 +1,7 @@
 import { Context, Next } from 'hono';
 import { createApiResponse } from '@/utils/helpers';
 import { verifyToken } from '@/utils/auth';
+import { getUserById, validateSession } from '@/services/authService';
 import { UserRole } from '@/types';
 
 /**
@@ -21,17 +22,34 @@ export const authMiddleware = async (
     }
 
     const token = authorization.split(' ')[1];
-    const user = verifyToken(token);
 
-    if (!user) {
+    // First check if session exists and is valid
+    const isSessionValid = await validateSession(token);
+    if (!isSessionValid) {
+      return c.json(
+        createApiResponse('error', null, 'Session expired or invalid'),
+        401
+      );
+    }
+
+    // Then verify JWT token
+    const decodedUser = verifyToken(token);
+    if (!decodedUser) {
       return c.json(
         createApiResponse('error', null, 'Invalid or expired token'),
         401
       );
     }
 
-    // Add user to context
+    // Fetch user from database to ensure they still exist and get latest data
+    const user = await getUserById(decodedUser.id);
+    if (!user) {
+      return c.json(createApiResponse('error', null, 'User not found'), 404);
+    }
+
+    // Add user and token to context
     c.set('user', user);
+    c.set('token', token as any); // Fix: Cast token to any for Hono context
     await next();
   } catch {
     return c.json(
