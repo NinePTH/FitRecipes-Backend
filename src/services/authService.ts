@@ -153,7 +153,9 @@ export async function login(data: LoginData): Promise<AuthResponse> {
 
   // Check if user has a password (OAuth users might not)
   if (!user.password) {
-    throw new Error('This account uses OAuth login. Please use Google login.');
+    throw new Error(
+      'This account is linked to Google. Please use "Sign in with Google" instead of email/password.'
+    );
   }
 
   // Verify password

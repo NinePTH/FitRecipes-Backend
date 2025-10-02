@@ -100,6 +100,14 @@ export async function login(c: Context): Promise<Response> {
           401
         );
       }
+
+      if (
+        error.message.includes('OAuth login') ||
+        error.message.includes('linked to Google') ||
+        error.message.includes('Sign in with Google')
+      ) {
+        return c.json(createApiResponse('error', null, error.message), 400);
+      }
     }
 
     return c.json(

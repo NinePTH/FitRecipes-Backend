@@ -270,6 +270,31 @@ describe('AuthController', () => {
         401
       );
     });
+
+    it('should return 400 for OAuth users trying password login', async () => {
+      // Arrange
+      (mockContext.req!.json as Mock).mockResolvedValue(validLoginData);
+      mockAuthService.login.mockRejectedValue(
+        new Error(
+          'This account is linked to Google. Please use "Sign in with Google" instead of email/password.'
+        )
+      );
+      (mockContext.json as Mock).mockReturnValue('error-response');
+
+      // Act
+      await authController.login(mockContext as Context);
+
+      // Assert
+      expect(mockContext.json).toHaveBeenCalledWith(
+        {
+          status: 'error',
+          data: null,
+          message:
+            'This account is linked to Google. Please use "Sign in with Google" instead of email/password.',
+        },
+        400
+      );
+    });
   });
 
   describe('getCurrentUser', () => {

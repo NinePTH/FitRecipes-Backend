@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { prisma } from '../src/utils/database';
 import { hashPassword } from '../src/utils/auth';
 
@@ -94,17 +95,20 @@ async function createTestUsers() {
     console.log('');
     console.log('📋 Test Credentials:');
     console.log('1. Valid Login: user@example.com / password123');
-    console.log('2. Existing Email: existing@example.com (for registration tests)');
+    console.log(
+      '2. Existing Email: existing@example.com (for registration tests)'
+    );
     console.log('3. Blocked Account: blocked@example.com / password123');
     console.log('4. Chef Account: chef@example.com / chefpass123');
     console.log('5. Admin Account: admin@example.com / adminpass123');
     console.log('');
     console.log('⚠️  Test Cases:');
     console.log('- Invalid email: invalid@example.com (should fail)');
-    console.log('- Wrong password: Use any email with wrong password (should fail)');
+    console.log(
+      '- Wrong password: Use any email with wrong password (should fail)'
+    );
     console.log('- Password < 6 chars: Will be caught by validation');
     console.log('- agreeToTerms: false: Will be caught by validation');
-
   } catch (error) {
     console.error('Error creating test users:', error);
   } finally {

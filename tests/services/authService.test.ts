@@ -38,7 +38,7 @@ const mockGenerateToken = generateToken as Mock;
 describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset all mock implementations
     mockPrisma.user.findUnique.mockReset();
     mockPrisma.user.create.mockReset();
@@ -47,7 +47,7 @@ describe('AuthService', () => {
     mockPrisma.session.findUnique.mockReset();
     mockPrisma.session.delete.mockReset();
     mockPrisma.session.deleteMany.mockReset();
-    
+
     mockHashPassword.mockReset();
     mockComparePassword.mockReset();
     mockGenerateToken.mockReset();
