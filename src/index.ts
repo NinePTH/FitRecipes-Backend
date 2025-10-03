@@ -32,10 +32,16 @@ app.use(
   '*',
   cors({
     origin: origin => {
-      const allowedOrigins = config.security.corsOrigin.split(',') || [
-        'http://localhost:3001',
-      ];
-      return allowedOrigins.includes(origin || '') ? origin : null;
+      const corsConfig = config.security.corsOrigin;
+
+      // If wildcard is set, allow all origins
+      if (corsConfig === '*') return '*';
+
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return '*';
+
+      const allowedOrigins = corsConfig.split(',').map(o => o.trim());
+      return allowedOrigins.includes(origin) ? origin : null;
     },
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
