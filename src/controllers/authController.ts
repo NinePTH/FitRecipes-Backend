@@ -279,12 +279,11 @@ export async function googleAuth(c: Context): Promise<Response> {
 export async function googleCallback(c: Context): Promise<Response> {
   try {
     const { code } = c.req.query();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (!code) {
-      return c.json(
-        createApiResponse('error', null, 'Authorization code required'),
-        400
-      );
+      // Redirect to frontend with error
+      return c.redirect(`${frontendUrl}/auth?error=missing_code`);
     }
 
     // Get user info from Google
@@ -294,34 +293,35 @@ export async function googleCallback(c: Context): Promise<Response> {
     try {
       const result = await AuthService.createOrUpdateOAuthUser(googleUser);
 
-      return c.json(
-        createApiResponse('success', result, 'OAuth login successful'),
-        200
-      );
+      // Redirect to frontend with token and user data
+      const params = new URLSearchParams({
+        token: result.token,
+        userId: result.user.id,
+        email: result.user.email,
+        firstName: result.user.firstName,
+        lastName: result.user.lastName || '',
+        role: result.user.role,
+      });
+
+      return c.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
     } catch (oauthError) {
       if (
         oauthError instanceof Error &&
         oauthError.message.includes('not yet implemented')
       ) {
-        return c.json(
-          createApiResponse(
-            'error',
-            null,
-            'OAuth user creation not yet implemented. Please regenerate Prisma client first.'
-          ),
-          501
+        return c.redirect(
+          `${frontendUrl}/auth?error=oauth_not_implemented&message=${encodeURIComponent('OAuth user creation not yet implemented')}`
         );
       }
       throw oauthError;
     }
   } catch (error) {
-    if (error instanceof Error) {
-      return c.json(createApiResponse('error', null, error.message), 400);
-    }
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const errorMessage =
+      error instanceof Error ? error.message : 'OAuth authentication failed';
 
-    return c.json(
-      createApiResponse('error', null, 'OAuth authentication failed'),
-      500
+    return c.redirect(
+      `${frontendUrl}/auth?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`
     );
   }
 }
