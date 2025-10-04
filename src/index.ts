@@ -32,10 +32,16 @@ app.use(
   '*',
   cors({
     origin: origin => {
-      const allowedOrigins = config.security.corsOrigin.split(',') || [
-        'http://localhost:3001',
-      ];
-      return allowedOrigins.includes(origin || '') ? origin : null;
+      const corsConfig = config.security.corsOrigin;
+
+      // If wildcard is set, allow all origins
+      if (corsConfig === '*') return '*';
+
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return '*';
+
+      const allowedOrigins = corsConfig.split(',').map(o => o.trim());
+      return allowedOrigins.includes(origin) ? origin : null;
     },
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -56,7 +62,7 @@ app.use(
 app.get('/health', async c => {
   return c.json(
     createApiResponse('success', {
-      status: 'healthyzzzzzzzz',
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     })
@@ -82,6 +88,9 @@ app.route('/api/v1', v1);
 // 404 handler
 app.notFound(notFoundHandler);
 
+// Export app for testing
+export { app };
+
 export default {
   port: config.port,
   fetch: app.fetch,
@@ -89,6 +98,9 @@ export default {
 
 // Start server if this file is run directly
 // Note: Bun will handle the server startup
+// eslint-disable-next-line no-console
 console.log(`🚀 FitRecipes Backend API starting on port ${config.port}`);
+// eslint-disable-next-line no-console
 console.log(`📊 Health check: http://localhost:${config.port}/health`);
+// eslint-disable-next-line no-console
 console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);

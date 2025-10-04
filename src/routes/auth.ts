@@ -1,106 +1,30 @@
 import { Hono } from 'hono';
-import { createApiResponse } from '@/utils/helpers';
+import * as authController from '@/controllers/authController';
+import { authMiddleware } from '@/middlewares/auth';
 
-const authRoutes = new Hono();
+const auth = new Hono();
 
-// POST /auth/register
-authRoutes.post('/register', async c => {
-  // TODO: Implement user registration
-  // - Validate email uniqueness
-  // - Accept Terms & Conditions
-  // - Hash password
-  // - Send verification email
-  return c.json(
-    createApiResponse(
-      'error',
-      null,
-      'Registration endpoint not implemented yet'
-    ),
-    501
-  );
-});
+// Public authentication routes
+auth.post('/register', authController.register);
+auth.post('/login', authController.login);
 
-// POST /auth/login
-authRoutes.post('/login', async c => {
-  // TODO: Implement user login
-  // - Validate credentials
-  // - Check for failed login attempts
-  // - Create session
-  // - Return JWT token
-  return c.json(
-    createApiResponse('error', null, 'Login endpoint not implemented yet'),
-    501
-  );
-});
+// Password reset routes
+auth.post('/forgot-password', authController.forgotPassword);
+auth.post('/reset-password', authController.resetPassword);
 
-// POST /auth/logout
-authRoutes.post('/logout', async c => {
-  // TODO: Implement user logout
-  // - Invalidate session/token
-  return c.json(
-    createApiResponse('error', null, 'Logout endpoint not implemented yet'),
-    501
-  );
-});
+// Google OAuth routes
+auth.get('/google', authController.googleAuth);
+auth.get('/google/callback', authController.googleCallback);
+auth.post('/google/mobile', authController.googleMobile);
 
-// POST /auth/forgot-password
-authRoutes.post('/forgot-password', async c => {
-  // TODO: Implement password reset request
-  // - Validate email
-  // - Generate reset token
-  // - Send reset email
-  return c.json(
-    createApiResponse(
-      'error',
-      null,
-      'Password reset endpoint not implemented yet'
-    ),
-    501
-  );
-});
+// Protected routes - require authentication
+auth.use('/logout', authMiddleware);
+auth.post('/logout', authController.logout);
 
-// POST /auth/reset-password
-authRoutes.post('/reset-password', async c => {
-  // TODO: Implement password reset
-  // - Validate reset token
-  // - Update password
-  return c.json(
-    createApiResponse(
-      'error',
-      null,
-      'Password reset confirmation endpoint not implemented yet'
-    ),
-    501
-  );
-});
+auth.use('/me', authMiddleware);
+auth.get('/me', authController.getCurrentUser);
 
-// GET /auth/verify-email/:token
-authRoutes.get('/verify-email/:token', async c => {
-  // TODO: Implement email verification
-  // - Validate verification token
-  // - Update user email verification status
-  return c.json(
-    createApiResponse(
-      'error',
-      null,
-      'Email verification endpoint not implemented yet'
-    ),
-    501
-  );
-});
+// Email verification route (placeholder)
+auth.get('/verify-email/:token', authController.verifyEmail);
 
-// GET /auth/me (requires authentication)
-authRoutes.get('/me', async c => {
-  // TODO: Get current user profile
-  // - Return authenticated user info
-  return c.json(
-    createApiResponse(
-      'error',
-      null,
-      'User profile endpoint not implemented yet'
-    ),
-    501
-  );
-});
-
-export default authRoutes;
+export default auth;

@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { createApiResponse, createPaginationParams, isValidEmail } from '../../src/utils/helpers';
+import {
+  createApiResponse,
+  createPaginationParams,
+  isValidEmail,
+} from '../../src/utils/helpers';
 
 describe('Helper Functions', () => {
   describe('createApiResponse', () => {
     it('should create success response with data', () => {
-      const response = createApiResponse('success', { id: 1 }, 'Success message');
-      
+      const response = createApiResponse(
+        'success',
+        { id: 1 },
+        'Success message'
+      );
+
       expect(response).toEqual({
         status: 'success',
         data: { id: 1 },
@@ -14,8 +22,10 @@ describe('Helper Functions', () => {
     });
 
     it('should create error response with errors', () => {
-      const response = createApiResponse('error', null, 'Error occurred', ['Field required']);
-      
+      const response = createApiResponse('error', null, 'Error occurred', [
+        'Field required',
+      ]);
+
       expect(response).toEqual({
         status: 'error',
         data: null,
@@ -28,7 +38,7 @@ describe('Helper Functions', () => {
   describe('createPaginationParams', () => {
     it('should create valid pagination params', () => {
       const pagination = createPaginationParams(2, 20);
-      
+
       expect(pagination).toEqual({
         page: 2,
         limit: 20,
@@ -38,7 +48,7 @@ describe('Helper Functions', () => {
 
     it('should handle min values', () => {
       const pagination = createPaginationParams(0, 0);
-      
+
       expect(pagination).toEqual({
         page: 1,
         limit: 1,
@@ -48,7 +58,7 @@ describe('Helper Functions', () => {
 
     it('should handle max limit', () => {
       const pagination = createPaginationParams(1, 200);
-      
+
       expect(pagination).toEqual({
         page: 1,
         limit: 100,

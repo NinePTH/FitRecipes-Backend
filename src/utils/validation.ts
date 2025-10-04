@@ -2,18 +2,31 @@ import { z } from 'zod';
 
 // User validation schemas
 export const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  termsAccepted: z
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  agreeToTerms: z
     .boolean()
-    .refine((val: boolean) => val === true, 'Terms must be accepted'),
+    .refine(
+      (val: boolean) => val === true,
+      'Must agree to Terms and Conditions'
+    ),
 });
 
 export const loginSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(1, 'Password is required'),
+});
+
+// Password reset validation schemas
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 // Recipe validation schemas
@@ -83,4 +96,25 @@ export const searchSchema = z.object({
   maxPrepTime: z.number().min(0).optional(),
   sortBy: z.enum(['rating', 'recent', 'prepTime']).default('rating'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// OAuth validation schemas
+export const googleMobileSchema = z.object({
+  idToken: z.string().min(1, 'Google ID token is required'),
+});
+
+export const oauthCallbackSchema = z.object({
+  code: z.string().min(1, 'Authorization code is required'),
+  state: z.string().optional(),
+});
+
+// Google user data validation
+export const googleUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  verified_email: z.boolean(),
+  name: z.string(),
+  given_name: z.string(),
+  family_name: z.string(),
+  picture: z.string().url(),
 });
