@@ -12,8 +12,9 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+// Use development mode (console logging) only if RESEND_API_KEY is not set or empty
 const isDevelopment =
-  process.env.NODE_ENV !== 'production' || !process.env.RESEND_API_KEY;
+  !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.trim() === '';
 
 /**
  * Send email using configured email service
@@ -26,15 +27,15 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     // Development mode: Log to console
     // eslint-disable-next-line no-console
     console.log(`
-📧 Email Service (Development Mode)
+📧 Email Service (Development Mode - No API Key)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 To: ${to}
 Subject: ${subject}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${content}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 In development mode - emails are logged instead of sent
-💡 Set RESEND_API_KEY in environment to enable real email sending
+💡 RESEND_API_KEY not set - emails are logged instead of sent
+💡 Set RESEND_API_KEY in .env to enable real email sending
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
 
