@@ -1,6 +1,11 @@
 import { prisma } from '@/utils/database';
 import { hashPassword, comparePassword, generateToken } from '@/utils/auth';
-import { sendPasswordResetEmail, generateResetToken } from '@/utils/email';
+import {
+  sendPasswordResetEmail,
+  generateResetToken,
+  sendVerificationEmail,
+  generateVerificationToken,
+} from '@/utils/email';
 import { AuthenticatedUser, UserRole } from '@/types';
 
 interface RegisterData {
@@ -93,6 +98,11 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   // Hash password
   const hashedPassword = await hashPassword(password);
 
+  // Generate email verification token
+  const verificationToken = generateVerificationToken();
+  const verificationTokenExpiry = new Date();
+  verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + 24); // 24 hours
+
   // Create user
   const user = await prisma.user.create({
     data: {
@@ -102,7 +112,16 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
       password: hashedPassword,
       termsAccepted: agreeToTerms,
       role: 'USER',
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpiresAt: verificationTokenExpiry,
     },
+  });
+
+  // Send verification email (async, don't wait)
+  sendVerificationEmail(user.email, verificationToken).catch(error => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to send verification email:', error);
   });
 
   // Generate JWT token
@@ -410,5 +429,79 @@ export async function createOrUpdateOAuthUser(googleUser: {
       role: user.role,
     },
     token,
+  };
+}
+
+/**
+ * Verify user email with verification token
+ */
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  // Find user with matching verification token
+  const user = await prisma.user.findFirst({
+    where: {
+      emailVerificationToken: token,
+      emailVerificationTokenExpiresAt: {
+        gte: new Date(), // Token not expired
+      },
+    },
+  });
+
+  if (!user) {
+    throw new Error('Invalid or expired verification token');
+  }
+
+  // Update user: mark as verified and clear token
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      isEmailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
+    },
+  });
+
+  return {
+    message: 'Email verified successfully',
+  };
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerificationEmail(
+  email: string
+): Promise<{ message: string }> {
+  // Find user by email
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (user.isEmailVerified) {
+    throw new Error('Email already verified');
+  }
+
+  // Generate new verification token
+  const verificationToken = generateVerificationToken();
+  const verificationTokenExpiry = new Date();
+  verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + 24); // 24 hours
+
+  // Update user with new token
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpiresAt: verificationTokenExpiry,
+    },
+  });
+
+  // Send verification email
+  await sendVerificationEmail(user.email, verificationToken);
+
+  return {
+    message: 'Verification email sent',
   };
 }

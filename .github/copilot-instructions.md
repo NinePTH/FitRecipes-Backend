@@ -66,7 +66,8 @@ src/
 - `POST /logout` - Secure session termination ✅
 - `POST /forgot-password` - Password reset token generation ✅
 - `POST /reset-password` - Password reset with token validation ✅
-- `GET /verify-email/:token` - Email verification (template ready, endpoint TODO)
+- `GET /verify-email/:token` - Email verification endpoint ✅
+- `POST /resend-verification` - Resend verification email ✅
 - `GET /me` - Get current authenticated user profile ✅
 - `GET /google` - Google OAuth initiation ✅
 - `GET /google/callback` - Google OAuth callback handler ✅
@@ -85,6 +86,11 @@ src/
   - CSRF protection via state parameter validation
   - OAuth users can optionally set password later for dual authentication
 - **Password Reset**: Secure 32-character random tokens with 1-hour expiration
+- **Email Verification**: Secure 32-character random tokens with 24-hour expiration
+  - Sent automatically after registration
+  - Resend functionality available
+  - Token-based verification via GET endpoint
+  - Frontend integration guide: `docs/EMAIL_VERIFICATION_FRONTEND_INTEGRATION.md`
 - **Email Service**: Configured with Resend (development mode logs to console)
 
 ### Recipe Management (`/api/v1/recipes`)
@@ -233,7 +239,7 @@ src/
 
 1. ~~**Password Reset System**~~ ✅ COMPLETE
 2. ~~**Google OAuth Integration**~~ ✅ COMPLETE  
-3. **Email Verification Endpoint** - Implement verification endpoint (email template ready)
+3. ~~**Email Verification System**~~ ✅ COMPLETE
 4. **Recipe Search** - High-performance multi-ingredient search
 5. **File Upload Handler** - Image processing and Supabase integration
 6. **Recipe Approval Workflow** - Admin management system

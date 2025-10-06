@@ -245,8 +245,60 @@ export async function resetPassword(c: Context): Promise<Response> {
 /**
  * Verify email (placeholder)
  */
+/**
+ * Verify user email with token
+ */
 export async function verifyEmail(c: Context): Promise<Response> {
-  return c.json(createApiResponse('error', null, 'Not implemented yet'), 501);
+  try {
+    const { token } = c.req.param();
+
+    if (!token) {
+      return c.json(
+        createApiResponse('error', null, 'Verification token required'),
+        400
+      );
+    }
+
+    const result = await AuthService.verifyEmail(token);
+
+    return c.json(createApiResponse('success', result, result.message), 200);
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Email verification failed'),
+      500
+    );
+  }
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerificationEmail(c: Context): Promise<Response> {
+  try {
+    const body = await c.req.json();
+    const { email } = body;
+
+    if (!email) {
+      return c.json(createApiResponse('error', null, 'Email is required'), 400);
+    }
+
+    const result = await AuthService.resendVerificationEmail(email);
+
+    return c.json(createApiResponse('success', result, result.message), 200);
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Failed to resend verification email'),
+      500
+    );
+  }
 }
 
 /**

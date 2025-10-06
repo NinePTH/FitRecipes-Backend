@@ -12,6 +12,10 @@ auth.post('/login', authController.login);
 auth.post('/forgot-password', authController.forgotPassword);
 auth.post('/reset-password', authController.resetPassword);
 
+// Email verification routes
+auth.get('/verify-email/:token', authController.verifyEmail);
+auth.post('/resend-verification', authController.resendVerificationEmail);
+
 // Google OAuth routes
 auth.get('/google', authController.googleAuth);
 auth.get('/google/callback', authController.googleCallback);
@@ -23,8 +27,5 @@ auth.post('/logout', authController.logout);
 
 auth.use('/me', authMiddleware);
 auth.get('/me', authController.getCurrentUser);
-
-// Email verification route (placeholder)
-auth.get('/verify-email/:token', authController.verifyEmail);
 
 export default auth;

@@ -121,3 +121,10 @@ export async function sendVerificationEmail(
 export function generateResetToken(): string {
   return generateRandomString(32);
 }
+
+/**
+ * Generate email verification token
+ */
+export function generateVerificationToken(): string {
+  return generateRandomString(32);
+}
