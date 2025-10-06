@@ -13,10 +13,11 @@ auth.post('/forgot-password', authController.forgotPassword);
 auth.post('/reset-password', authController.resetPassword);
 
 // Email verification routes
+// IMPORTANT: More specific route (:token) must come BEFORE the generic route
 auth.get('/verify-email/:token', authController.verifyEmail);
+auth.post('/resend-verification', authController.resendVerificationEmail);
 // Fallback route for query parameter format (backwards compatibility)
 auth.get('/verify-email', authController.verifyEmail);
-auth.post('/resend-verification', authController.resendVerificationEmail);
 
 // Google OAuth routes
 auth.get('/google', authController.googleAuth);
