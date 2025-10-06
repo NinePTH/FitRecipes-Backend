@@ -70,6 +70,7 @@ model User {
   role                  UserRole  @default(USER)
   isEmailVerified       Boolean   @default(false)
   termsAccepted         Boolean   @default(false)
+  termsAcceptedAt       DateTime? // When user accepted ToS
   failedLoginAttempts   Int       @default(0)
   blockedUntil          DateTime?
   

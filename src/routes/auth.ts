@@ -31,4 +31,11 @@ auth.post('/logout', authController.logout);
 auth.use('/me', authMiddleware);
 auth.get('/me', authController.getCurrentUser);
 
+// Terms of Service routes (for OAuth users) - require authentication
+auth.use('/terms/accept', authMiddleware);
+auth.post('/terms/accept', authController.acceptTerms);
+
+auth.use('/terms/decline', authMiddleware);
+auth.post('/terms/decline', authController.declineTerms);
+
 export default auth;

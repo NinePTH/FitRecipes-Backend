@@ -28,6 +28,7 @@ export interface AuthResponse {
     firstName: string;
     lastName: string;
     role: string;
+    termsAccepted?: boolean; // For OAuth users to check if they need to accept ToS
   };
   token: string;
 }
@@ -427,6 +428,7 @@ export async function createOrUpdateOAuthUser(googleUser: {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      termsAccepted: user.termsAccepted, // Include ToS status for OAuth users
     },
     token,
   };
@@ -503,5 +505,61 @@ export async function resendVerificationEmail(
 
   return {
     message: 'Verification email sent',
+  };
+}
+
+/**
+ * Accept Terms of Service (for OAuth users)
+ */
+export async function acceptTerms(
+  userId: string
+): Promise<{ message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (user.termsAccepted) {
+    throw new Error('Terms already accepted');
+  }
+
+  // Update user to accept terms
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
+    },
+  });
+
+  return {
+    message: 'Terms of Service accepted successfully',
+  };
+}
+
+/**
+ * Decline Terms of Service (for OAuth users) - logout user
+ */
+export async function declineTerms(
+  userId: string
+): Promise<{ message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Remove all sessions for this user (logout)
+  await prisma.session.deleteMany({
+    where: { userId },
+  });
+
+  return {
+    message: 'Terms of Service declined. You have been logged out.',
   };
 }

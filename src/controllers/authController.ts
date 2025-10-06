@@ -420,3 +420,61 @@ export async function googleMobile(c: Context): Promise<Response> {
     );
   }
 }
+
+/**
+ * Accept Terms of Service (for OAuth users)
+ */
+export async function acceptTerms(c: Context): Promise<Response> {
+  try {
+    const user = c.get('user'); // From authMiddleware
+
+    if (!user || !user.id) {
+      return c.json(
+        createApiResponse('error', null, 'User not authenticated'),
+        401
+      );
+    }
+
+    const result = await AuthService.acceptTerms(user.id);
+
+    return c.json(createApiResponse('success', null, result.message), 200);
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Failed to accept terms'),
+      500
+    );
+  }
+}
+
+/**
+ * Decline Terms of Service (for OAuth users)
+ */
+export async function declineTerms(c: Context): Promise<Response> {
+  try {
+    const user = c.get('user'); // From authMiddleware
+
+    if (!user || !user.id) {
+      return c.json(
+        createApiResponse('error', null, 'User not authenticated'),
+        401
+      );
+    }
+
+    const result = await AuthService.declineTerms(user.id);
+
+    return c.json(createApiResponse('success', null, result.message), 200);
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Failed to decline terms'),
+      500
+    );
+  }
+}
