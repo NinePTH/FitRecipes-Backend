@@ -14,6 +14,8 @@ auth.post('/reset-password', authController.resetPassword);
 
 // Email verification routes
 auth.get('/verify-email/:token', authController.verifyEmail);
+// Fallback route for query parameter format (backwards compatibility)
+auth.get('/verify-email', authController.verifyEmail);
 auth.post('/resend-verification', authController.resendVerificationEmail);
 
 // Google OAuth routes

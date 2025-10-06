@@ -99,7 +99,8 @@ export async function sendVerificationEmail(
   email: string,
   verificationToken: string
 ): Promise<void> {
-  const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
+  // Use path parameter format: /verify-email/:token (not query parameter)
+  const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
 
   const subject = 'FitRecipes - Email Verification';
   const content = `

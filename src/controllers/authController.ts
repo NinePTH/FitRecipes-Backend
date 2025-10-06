@@ -247,10 +247,14 @@ export async function resetPassword(c: Context): Promise<Response> {
  */
 /**
  * Verify user email with token
+ * Supports both path parameter (/verify-email/:token) and query parameter (/verify-email?token=xxx)
  */
 export async function verifyEmail(c: Context): Promise<Response> {
   try {
-    const { token } = c.req.param();
+    // Try to get token from path parameter first, then from query parameter
+    const pathToken = c.req.param('token');
+    const queryToken = c.req.query('token');
+    const token = pathToken || queryToken;
 
     if (!token) {
       return c.json(
