@@ -30,6 +30,8 @@ export const generateToken = (user: AuthenticatedUser): string => {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    termsAccepted: user.termsAccepted,
+    isOAuthUser: user.isOAuthUser,
   };
 
   const options: SignOptions = {
@@ -51,6 +53,8 @@ export const verifyToken = (token: string): AuthenticatedUser | null => {
       firstName: decoded.firstName || '',
       lastName: decoded.lastName || '',
       role: decoded.role,
+      termsAccepted: decoded.termsAccepted ?? false,
+      isOAuthUser: decoded.isOAuthUser ?? false,
     };
   } catch {
     return null;
