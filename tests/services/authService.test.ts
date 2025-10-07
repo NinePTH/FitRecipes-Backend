@@ -28,6 +28,7 @@ vi.mock('../../src/utils/auth', () => ({
   hashPassword: vi.fn(),
   comparePassword: vi.fn(),
   generateToken: vi.fn(),
+  generateRandomString: vi.fn(),
 }));
 
 const mockPrisma = prisma as any;
@@ -87,23 +88,28 @@ describe('AuthService', () => {
         where: { email: validRegisterData.email },
       });
       expect(mockHashPassword).toHaveBeenCalledWith(validRegisterData.password);
-      expect(mockPrisma.user.create).toHaveBeenCalledWith({
-        data: {
-          firstName: validRegisterData.firstName,
-          lastName: validRegisterData.lastName,
-          email: validRegisterData.email,
-          password: 'hashedPassword123',
-          termsAccepted: validRegisterData.agreeToTerms,
-          role: 'USER',
-        },
-      });
-      expect(mockGenerateToken).toHaveBeenCalledWith({
-        id: mockUser.id,
-        email: mockUser.email,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        role: mockUser.role,
-      });
+      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            firstName: validRegisterData.firstName,
+            lastName: validRegisterData.lastName,
+            email: validRegisterData.email,
+            password: 'hashedPassword123',
+            termsAccepted: validRegisterData.agreeToTerms,
+            role: 'USER',
+            isEmailVerified: false,
+          }),
+        })
+      );
+      expect(mockGenerateToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: mockUser.id,
+          email: mockUser.email,
+          firstName: mockUser.firstName,
+          lastName: mockUser.lastName,
+          role: mockUser.role,
+        })
+      );
       expect(result).toEqual({
         user: {
           id: mockUser.id,
@@ -111,6 +117,8 @@ describe('AuthService', () => {
           firstName: mockUser.firstName,
           lastName: mockUser.lastName,
           role: mockUser.role.toLowerCase(),
+          termsAccepted: undefined,
+          isOAuthUser: false,
         },
         token: 'jwt-token-123',
       });
@@ -171,6 +179,8 @@ describe('AuthService', () => {
           firstName: mockUser.firstName,
           lastName: mockUser.lastName,
           role: mockUser.role.toLowerCase(),
+          termsAccepted: undefined,
+          isOAuthUser: false,
         },
         token: 'jwt-token-123',
       });
@@ -263,6 +273,8 @@ describe('AuthService', () => {
         lastName: mockUser.lastName,
         email: mockUser.email,
         role: mockUser.role,
+        termsAccepted: undefined,
+        isOAuthUser: false,
       });
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
