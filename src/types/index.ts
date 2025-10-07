@@ -35,6 +35,8 @@ export interface AuthenticatedUser {
   firstName: string;
   lastName: string;
   role: UserRole;
+  termsAccepted: boolean;
+  isOAuthUser: boolean;
 }
 
 export interface RecipeSearchParams {

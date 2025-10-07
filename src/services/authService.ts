@@ -133,6 +133,8 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role as any,
+    termsAccepted: user.termsAccepted,
+    isOAuthUser: false,
   };
 
   const token = generateToken(authenticatedUser);
@@ -208,6 +210,8 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role as any,
+    termsAccepted: user.termsAccepted,
+    isOAuthUser: !!user.oauthProvider,
   };
 
   const token = generateToken(authenticatedUser);
@@ -283,6 +287,8 @@ export async function getUserById(
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role as any,
+    termsAccepted: user.termsAccepted,
+    isOAuthUser: !!user.oauthProvider,
   };
 }
 
@@ -422,6 +428,8 @@ export async function createOrUpdateOAuthUser(googleUser: {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role as UserRole,
+    termsAccepted: user.termsAccepted,
+    isOAuthUser: true,
   });
 
   await createSession(user.id, token);

@@ -357,6 +357,8 @@ export async function googleCallback(c: Context): Promise<Response> {
         firstName: result.user.firstName,
         lastName: result.user.lastName || '',
         role: result.user.role,
+        termsAccepted: result.user.termsAccepted.toString(),
+        isOAuthUser: result.user.isOAuthUser.toString(),
       });
 
       return c.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
