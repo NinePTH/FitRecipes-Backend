@@ -53,7 +53,7 @@ ${content}
   // Production mode: Send actual email via Resend
   try {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@fitrecipes.com',
+      from: `FitRecipes <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
       to,
       subject,
       html: content,
