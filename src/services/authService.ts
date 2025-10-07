@@ -28,7 +28,8 @@ export interface AuthResponse {
     firstName: string;
     lastName: string;
     role: string;
-    termsAccepted?: boolean; // For OAuth users to check if they need to accept ToS
+    termsAccepted: boolean; // Whether user has accepted ToS
+    isOAuthUser: boolean; // Whether user signed up via OAuth (Google, etc)
   };
   token: string;
 }
@@ -146,6 +147,8 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role.toLowerCase(),
+      termsAccepted: user.termsAccepted,
+      isOAuthUser: false, // Regular registration is not OAuth
     },
     token,
   };
@@ -219,6 +222,8 @@ export async function login(data: LoginData): Promise<AuthResponse> {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role.toLowerCase(),
+      termsAccepted: user.termsAccepted,
+      isOAuthUser: !!user.oauthProvider, // Check if user has OAuth provider
     },
     token,
   };
@@ -429,6 +434,7 @@ export async function createOrUpdateOAuthUser(googleUser: {
       lastName: user.lastName,
       role: user.role,
       termsAccepted: user.termsAccepted, // Include ToS status for OAuth users
+      isOAuthUser: true, // This is always an OAuth user (Google)
     },
     token,
   };
