@@ -72,6 +72,8 @@ src/
 - `GET /google` - Google OAuth initiation ✅
 - `GET /google/callback` - Google OAuth callback handler ✅
 - `POST /google/mobile` - Google OAuth for mobile apps ✅
+- `POST /terms/accept` - Accept Terms of Service (OAuth users) ✅
+- `POST /terms/decline` - Decline Terms of Service and logout (OAuth users) ✅
 
 **Implementation Details**:
 - Uses `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` from `src/utils/validation.ts`
@@ -90,7 +92,12 @@ src/
   - Sent automatically after registration
   - Resend functionality available
   - Token-based verification via GET endpoint
-  - Frontend integration guide: `docs/EMAIL_VERIFICATION_FRONTEND_INTEGRATION.md`
+  - Frontend integration guide: `docs/EMAIL_VERIFICATION_GUIDE.md`
+- **Terms of Service**: OAuth users must accept ToS after first login
+  - OAuth users created with `termsAccepted: false`
+  - POST `/terms/accept` - Marks user as accepted
+  - POST `/terms/decline` - Logs user out immediately
+  - Frontend should check `isOAuthUser && !termsAccepted` and redirect to ToS page
 - **Email Service**: Configured with Resend (development mode logs to console)
 
 ### Recipe Management (`/api/v1/recipes`)
@@ -282,7 +289,7 @@ src/
 
 **Email Templates Available**:
 - Password reset email with secure token link ✅
-- Email verification (template ready, endpoint TODO)
+- Email verification email with secure token link ✅
 - Welcome email (optional, TODO)
 
 **Configuration**:
@@ -521,10 +528,7 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 - **`MIGRATIONS_GUIDE.md`** - Prisma migrations workflow and troubleshooting
 
 ### Quick References:
-- **`AUTH_ENDPOINTS_CONSISTENCY.md`** - Auth endpoint technical details
-- **`AUTH_RESPONSE_FORMAT.md`** - Frontend auth integration examples
 - **`DEPLOYMENT_URLS.md`** - Quick deployment URLs reference
-- **`PRODUCTION_DEPLOYMENT_CHECKLIST.md`** - Production deployment checklist
 
 ### Troubleshooting:
 - **`FIX_STAGING_MIGRATION_BASELINE.md`** - Fix P3005 database migration error
