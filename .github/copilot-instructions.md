@@ -512,15 +512,60 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 **Solution**: Never add `prisma/migrations/` to .gitignore - migrations MUST be version controlled  
 **Details**: See `docs/MIGRATIONS_MUST_BE_IN_GIT.md`
 
-## 📚 Additional Documentation
+## 📚 Documentation Structure
 
-Comprehensive guides available in `docs/`:
-- `DEPLOYMENT_URLS.md` - Quick reference for all deployment environments and URLs
-- `PRODUCTION_DEPLOYMENT_CHECKLIST.md` - Complete production deployment checklist
-- `STAGING_SETUP.md` - Complete staging environment setup guide
-- `STAGING_QUICKSTART.md` - Quick reference for staging deployment
-- `DATABASE_SYNC_FIX.md` - Database schema synchronization explanation
-- `MIGRATIONS_GUIDE.md` - Complete Prisma migrations workflow
-- `MIGRATIONS_STATUS.md` - Current migration setup confirmation
-- `MIGRATIONS_MUST_BE_IN_GIT.md` - Critical: Why migrations must be version controlled
-- `FIX_STAGING_MIGRATION_BASELINE.md` - How to fix P3005 error on existing databases
+### Essential Guides (in `docs/`):
+- **`AUTHENTICATION_GUIDE.md`** - Complete auth implementation (email/password, OAuth, email verification, ToS)
+- **`DEPLOYMENT_GUIDE.md`** - Full deployment guide (Render, Docker, CI/CD, migrations)
+- **`EMAIL_VERIFICATION_GUIDE.md`** - Email verification setup and frontend integration
+- **`MIGRATIONS_GUIDE.md`** - Prisma migrations workflow and troubleshooting
+
+### Quick References:
+- **`AUTH_ENDPOINTS_CONSISTENCY.md`** - Auth endpoint technical details
+- **`AUTH_RESPONSE_FORMAT.md`** - Frontend auth integration examples
+- **`DEPLOYMENT_URLS.md`** - Quick deployment URLs reference
+- **`PRODUCTION_DEPLOYMENT_CHECKLIST.md`** - Production deployment checklist
+
+### Troubleshooting:
+- **`FIX_STAGING_MIGRATION_BASELINE.md`** - Fix P3005 database migration error
+- **`MIGRATIONS_MUST_BE_IN_GIT.md`** - Why migrations must be version controlled
+
+## 🔑 Key Implementation Notes
+
+### Authentication Response Format (ALL endpoints)
+All auth endpoints (`/register`, `/login`, `/me`, `/google/callback`) return consistent format:
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "string",
+      "email": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "role": "user|chef|admin",
+      "termsAccepted": boolean,  // ToS acceptance status
+      "isOAuthUser": boolean      // OAuth vs email/password user
+    },
+    "token": "jwt-token"
+  }
+}
+```
+
+### Terms of Service Flow (OAuth Users)
+- OAuth users created with `termsAccepted: false`
+- Must accept ToS via `/auth/terms/accept` after first login
+- Frontend should check `isOAuthUser && !termsAccepted` and redirect to ToS page
+- Declining ToS logs user out immediately
+
+### Email Verification
+- Verification email sent automatically after registration (async)
+- Users can login before verifying (verification not required)
+- Token expires after 24 hours
+- Resend endpoint available: `/auth/resend-verification`
+
+### Database Migrations - CRITICAL
+- **NEVER add `prisma/migrations/` to .gitignore** - migrations MUST be in git
+- Use `prisma migrate deploy` in production (not `prisma db push`)
+- Docker entrypoint runs migrations automatically before app starts
+- Schema changes: `bun run db:migrate -- --name description` then commit migration files
