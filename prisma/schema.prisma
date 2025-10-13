@@ -91,6 +91,8 @@ model User {
 
   // Relations
   recipes               Recipe[]
+  approvedRecipes       Recipe[]  @relation("ApprovedRecipes")
+  rejectedRecipes       Recipe[]  @relation("RejectedRecipes")
   comments              Comment[]
   ratings               Rating[]
   sessions              Session[]
@@ -115,32 +117,44 @@ model Recipe {
   id               String          @id @default(cuid())
   title            String
   description      String
-  ingredients      String[]
+  mainIngredient   String          // Primary ingredient for filtering
+  ingredients      Json            // Array of {name, amount, unit}
   instructions     String[]
-  prepTime         Int             // in minutes
-  cookTime         Int             // in minutes
+  cookingTime      Int             // in minutes
   servings         Int
   difficulty       DifficultyLevel
-  mealType         MealType
-  dietType         DietType
-  cuisineType      CuisineType
-  mainIngredient   String
+  cuisineType      String?
+  dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree}
+  nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber}
+  tags             String[]
   imageUrl         String?
   status           RecipeStatus    @default(PENDING)
-  rejectionReason  String?
   averageRating    Float           @default(0)
   totalRatings     Int             @default(0)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  
+  // Approval/Rejection tracking
+  approvedAt       DateTime?
+  approvedById     String?
+  rejectedAt       DateTime?
+  rejectedById     String?
+  rejectionReason  String?
+  adminNote        String?
   
   // Foreign Keys
   authorId         String
 
   // Relations
   author           User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  approvedBy       User?     @relation("ApprovedRecipes", fields: [approvedById], references: [id])
+  rejectedBy       User?     @relation("RejectedRecipes", fields: [rejectedById], references: [id])
   comments         Comment[]
   ratings          Rating[]
 
+  @@index([status])
+  @@index([mainIngredient])
+  @@index([authorId])
   @@map("recipes")
 }
 
@@ -164,6 +178,7 @@ model Comment {
 model Rating {
   id        String   @id @default(cuid())
   value     Int      @db.SmallInt // 1-5 stars
+  comment   String?  // Optional review comment
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

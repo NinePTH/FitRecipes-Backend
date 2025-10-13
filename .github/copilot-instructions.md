@@ -101,30 +101,63 @@ src/
 - **Email Service**: Configured with Resend (development mode logs to console)
 
 ### Recipe Management (`/api/v1/recipes`)
-**Status**: Placeholder routes created, implementation needed
-- `GET /search` - Multi-ingredient search with priority matching
-- `GET /` - Browse with filtering and sorting
-- `GET /recommendations` - Personalized recommendations (trending, new, for-you)
-- `GET /:id` - Recipe details with comments and ratings
-- `POST /` - Submit recipe (Chef role + image upload to Supabase)
-- `PUT /:id` - Update recipe (Chef role, ownership validation)
-- `DELETE /:id` - Delete recipe (Chef role, ownership validation)
+**Status**: ✅ PARTIAL - Submission and approval implemented
+- `POST /` - Submit recipe (Chef role) ✅ COMPLETE
+- `GET /:id` - Recipe details with ratings and authorization checks ✅ COMPLETE
+- ⏳ `GET /search` - Multi-ingredient search with priority matching (TODO)
+- ⏳ `GET /` - Browse with filtering and sorting (TODO)
+- ⏳ `GET /recommendations` - Personalized recommendations (TODO)
+- ⏳ `PUT /:id` - Update recipe (Chef role, ownership validation) (TODO)
+- ⏳ `DELETE /:id` - Delete recipe (Chef role, ownership validation) (TODO)
 
-**Implementation Notes**:
-- Use `recipeSchema` from `src/utils/validation.ts`
+**Implementation Details**:
+- **Recipe Submission** (`POST /`):
+  - Uses comprehensive `recipeSchema` from `src/utils/validation.ts` with nested validation
+  - Ingredients stored as Json array: `[{name, amount, unit}]`
+  - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree) as Json
+  - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber) as Json
+  - Requires `chefOrAdmin` middleware - only CHEF and ADMIN roles can submit
+  - Creates recipe with `PENDING` status for admin review
+  - Returns 201 with full recipe including author information
+  
+- **Recipe Detail View** (`GET /:id`):
+  - Authorization-based visibility:
+    * `PENDING` recipes: Only author and admins can view
+    * `REJECTED` recipes: Only author can view (with rejection reason)
+    * `APPROVED` recipes: All authenticated users can view
+  - Includes author information and ratings with reviewer names
+  - Returns 403 if user lacks permission, 404 if not found
+  
+- **Implemented in**:
+  - Service: `src/services/recipeService.ts` (submitRecipe, getRecipeById)
+  - Controller: `src/controllers/recipeController.ts` (submitRecipe, getRecipeById)
+  - Routes: `src/routes/recipe.ts` (POST /, GET /:id)
+  - Tests: `tests/services/recipeService.test.ts` (9 tests covering authorization logic)
+
+**Future Implementation Notes**:
 - Image uploads via `supabaseClient.uploadFile()` from `src/utils/supabase.ts`
-- Apply `chefOrAdmin` middleware for submission endpoints
 - Implement caching for trending/popular recipes
 - Ensure search responds within 3 seconds for up to 10 ingredients
 
 ### Admin Management (`/api/v1/admin`)
-**Status**: Placeholder routes created, protected with `adminOnly` middleware
-- `GET /recipes/pending` - Pending recipes with pagination
-- `POST /recipes/:id/approve` - Approve recipe, update status to APPROVED
-- `POST /recipes/:id/reject` - Reject recipe with reason, update status to REJECTED
-- `GET /users` - User management with filtering
-- `PUT /users/:id/role` - Update user role (USER/CHEF/ADMIN)
-- `GET /stats` - Platform statistics and analytics
+**Status**: ✅ PARTIAL - Recipe approval system implemented
+- `GET /recipes/pending` - Pending recipes with pagination ✅ COMPLETE
+- `PUT /recipes/:id/approve` - Approve recipe, update status to APPROVED ✅ COMPLETE
+- `PUT /recipes/:id/reject` - Reject recipe with reason, update status to REJECTED ✅ COMPLETE
+- ⏳ `GET /users` - User management with filtering (TODO)
+- ⏳ `PUT /users/:id/role` - Update user role (USER/CHEF/ADMIN) (TODO)
+- ⏳ `GET /stats` - Platform statistics and analytics (TODO)
+
+**Implementation Details**:
+- **Recipe Approval Workflow**:
+  - Service: `src/services/recipeService.ts` (getPendingRecipes, approveRecipe, rejectRecipe)
+  - Controller: `src/controllers/recipeController.ts` (getPendingRecipes, approveRecipe, rejectRecipe)
+  - Routes: `src/routes/admin.ts` (GET /recipes/pending, PUT /recipes/:id/approve, PUT /recipes/:id/reject)
+  - All routes protected with `authMiddleware` + `adminOnly` middleware
+  - Pending recipes returned with pagination (page, limit, sortBy, sortOrder)
+  - Approval stores adminId, timestamp, and optional adminNote
+  - Rejection stores adminId, timestamp, and required rejectionReason (10-500 chars)
+  - Tests: `tests/services/recipeService.test.ts` (covering approval/rejection logic)
 
 ### Community Features (`/api/v1/community`)
 **Status**: Placeholder routes created, implementation needed
@@ -247,12 +280,14 @@ src/
 1. ~~**Password Reset System**~~ ✅ COMPLETE
 2. ~~**Google OAuth Integration**~~ ✅ COMPLETE  
 3. ~~**Email Verification System**~~ ✅ COMPLETE
-4. **Recipe Search** - High-performance multi-ingredient search
-5. **File Upload Handler** - Image processing and Supabase integration
-6. **Recipe Approval Workflow** - Admin management system
-7. **Community Features** - Comments and ratings system
-8. **Performance Optimization** - Caching and database indexing
-9. **Monitoring & Logging** - Enhanced observability
+4. ~~**Recipe Submission & Detail View**~~ ✅ COMPLETE
+5. ~~**Recipe Approval Workflow**~~ ✅ COMPLETE
+6. **Recipe Search** - High-performance multi-ingredient search
+7. **Recipe Browse** - Filtering, sorting, and pagination
+8. **File Upload Handler** - Image processing and Supabase integration
+9. **Community Features** - Comments and ratings system
+10. **Performance Optimization** - Caching and database indexing
+11. **Monitoring & Logging** - Enhanced observability
 
 ## 🔐 Security Features Implemented
 
@@ -310,22 +345,26 @@ EMAIL_FROM=noreply@yourdomain.com
 
 ## 🧪 Testing Coverage
 
-**Current Status**: 35 tests passing with high coverage
+**Current Status**: 44 tests passing with high coverage
 
 **Test Structure**:
 ```
 tests/
 ├── services/
-│   └── authService.test.ts      ✅ 14 tests (registration, login, OAuth, password reset)
+│   ├── authService.test.ts      ✅ 10 tests (registration, login, OAuth, password reset)
+│   └── recipeService.test.ts    ✅ 9 tests (submit, getById, approve, reject, pagination)
 ├── controllers/
-│   └── authController.test.ts   ✅ 21 tests (all endpoints, error handling)
-└── integration/                 (TODO - E2E tests)
+│   └── authController.test.ts   ✅ 14 tests (all endpoints, error handling)
+├── utils/
+│   └── helpers.test.ts          ✅ 7 tests (API response formatting, pagination)
+└── integration/
+    └── auth.integration.test.ts ✅ 4 tests (E2E auth flows)
 ```
 
 **Testing Stack**:
 - Framework: Vitest with coverage reporting
 - Mocking: `vi.mock()` for Prisma and external services
-- Coverage: High coverage on auth features
+- Coverage: High coverage on auth and recipe features
 - CI/CD: Tests run automatically on all PRs
 
 **Run Tests**:
