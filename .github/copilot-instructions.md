@@ -345,7 +345,7 @@ EMAIL_FROM=noreply@yourdomain.com
 
 ## 🧪 Testing Coverage
 
-**Current Status**: 44 tests passing with high coverage
+**Current Status**: 59 tests passing with comprehensive coverage
 
 **Test Structure**:
 ```
@@ -358,12 +358,20 @@ tests/
 ├── utils/
 │   └── helpers.test.ts          ✅ 7 tests (API response formatting, pagination)
 └── integration/
-    └── auth.integration.test.ts ✅ 4 tests (E2E auth flows)
+    └── auth.integration.test.ts ✅ 19 tests (complete auth integration flows)
 ```
+
+**Integration Test Coverage** (auth.integration.test.ts):
+- **Complete Registration Flow** (5 tests): Success case, duplicate email, terms validation, email validation, password length
+- **Complete Login Flow** (5 tests): Success case, wrong password, non-existent user, account locking, locked account rejection
+- **Logout Flow** (1 test): Session deletion
+- **Password Reset Flow** (5 tests): Token generation, silent non-existent email, valid reset, expired token, invalid token
+- **Security Features** (3 tests): Password hashing, session expiration, failed attempt reset
 
 **Testing Stack**:
 - Framework: Vitest with coverage reporting
 - Mocking: `vi.mock()` for Prisma and external services
+- Integration: Tests verify controller → service → database layer interactions
 - Coverage: High coverage on auth and recipe features
 - CI/CD: Tests run automatically on all PRs
 
