@@ -114,8 +114,11 @@ src/
 - **Recipe Submission** (`POST /`):
   - Uses comprehensive `recipeSchema` from `src/utils/validation.ts` with nested validation
   - Ingredients stored as Json array: `[{name, amount, unit}]`
-  - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree) as Json
-  - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber) as Json
+  - **Required fields**:
+    * `prepTime` - Integer (1-300 minutes), defaults to 10 if not provided
+    * `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to DINNER if not provided
+  - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo) as Json
+  - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber, sodium) as Json
   - Requires `chefOrAdmin` middleware - only CHEF and ADMIN roles can submit
   - Creates recipe with `PENDING` status for admin review
   - Returns 201 with full recipe including author information
@@ -190,6 +193,10 @@ src/
 **Status**: Complete schema implemented in `prisma/schema.prisma`
 - **User Model**: Includes role-based permissions, email verification, failed login tracking
 - **Recipe Model**: Comprehensive fields with status management (PENDING/APPROVED/REJECTED)
+  - `prepTime` - Integer (1-300 minutes, default 10)
+  - `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT, default DINNER) with index
+  - `dietaryInfo` - Json {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
+  - `nutritionInfo` - Json {calories, protein, carbs, fat, fiber, sodium}
 - **Comment & Rating Models**: Full community engagement support
 - **Session Model**: Secure session management with expiration
 
@@ -215,6 +222,11 @@ src/
 
 **Validation** (`src/utils/validation.ts`):
 - Zod schemas for all endpoints: `registerSchema`, `loginSchema`, `recipeSchema`, `forgotPasswordSchema`, `resetPasswordSchema`, etc.
+- **Recipe Validation**:
+  - `ingredientSchema` - {name, amount, unit} validation
+  - `dietaryInfoSchema` - {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo} with boolean defaults
+  - `nutritionInfoSchema` - {calories, protein, carbs, fat, fiber, sodium} with min value validation
+  - `recipeSchema` - Complete recipe validation with nested schemas and defaults (prepTime: 10, mealType: DINNER)
 
 **Email Service** (`src/utils/email.ts`):
 - `sendEmail(to, subject, content)` - Email delivery via Resend/Nodemailer

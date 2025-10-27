@@ -41,6 +41,8 @@ const dietaryInfoSchema = z.object({
   isVegan: z.boolean().default(false),
   isGlutenFree: z.boolean().default(false),
   isDairyFree: z.boolean().default(false),
+  isKeto: z.boolean().default(false),
+  isPaleo: z.boolean().default(false),
 });
 
 const nutritionInfoSchema = z.object({
@@ -49,6 +51,7 @@ const nutritionInfoSchema = z.object({
   carbs: z.number().min(0, 'Carbs cannot be negative'),
   fat: z.number().min(0, 'Fat cannot be negative'),
   fiber: z.number().min(0, 'Fiber cannot be negative'),
+  sodium: z.number().min(0, 'Sodium cannot be negative'),
 });
 
 export const recipeSchema = z.object({
@@ -70,6 +73,11 @@ export const recipeSchema = z.object({
   instructions: z
     .array(z.string().min(1, 'Instruction step cannot be empty'))
     .min(1, 'At least one instruction step is required'),
+  prepTime: z
+    .number()
+    .min(1, 'Prep time must be at least 1 minute')
+    .max(300, 'Prep time must be less than 300 minutes')
+    .default(10),
   cookingTime: z
     .number()
     .min(1, 'Cooking time must be at least 1 minute')
@@ -81,6 +89,14 @@ export const recipeSchema = z.object({
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD'], {
     errorMap: () => ({ message: 'Difficulty must be EASY, MEDIUM, or HARD' }),
   }),
+  mealType: z
+    .enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'DESSERT'], {
+      errorMap: () => ({
+        message:
+          'Meal type must be BREAKFAST, LUNCH, DINNER, SNACK, or DESSERT',
+      }),
+    })
+    .default('DINNER'),
   cuisineType: z.string().optional(),
   dietaryInfo: dietaryInfoSchema.optional(),
   nutritionInfo: nutritionInfoSchema.optional(),

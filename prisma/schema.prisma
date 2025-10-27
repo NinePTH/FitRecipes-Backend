@@ -120,12 +120,14 @@ model Recipe {
   mainIngredient   String          // Primary ingredient for filtering
   ingredients      Json            // Array of {name, amount, unit}
   instructions     String[]
+  prepTime         Int             @default(10) // in minutes - NEW (default 10 min)
   cookingTime      Int             // in minutes
   servings         Int
   difficulty       DifficultyLevel
+  mealType         MealType        @default(DINNER) // NEW: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT (default DINNER)
   cuisineType      String?
-  dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree}
-  nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber}
+  dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
+  nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber, sodium}
   tags             String[]
   imageUrl         String?
   status           RecipeStatus    @default(PENDING)
@@ -155,6 +157,7 @@ model Recipe {
   @@index([status])
   @@index([mainIngredient])
   @@index([authorId])
+  @@index([mealType])
   @@map("recipes")
 }
 
