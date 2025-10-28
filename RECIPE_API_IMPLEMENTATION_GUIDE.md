@@ -92,6 +92,9 @@ interface Recipe {
     sodium: number;              // ≥ 0 (mg) ⭐ NEW
   };
   
+  // Allergen Information (Optional)
+  allergies?: string[];          // Array of allergen names (e.g., ["nuts", "dairy", "eggs"]) ⭐ NEW
+  
   // Media
   imageUrl?: string;             // Optional image URL
   
@@ -196,6 +199,7 @@ interface Rating {
     "fiber": 5,
     "sodium": 650
   },
+  "allergies": ["eggs", "dairy"],
   "tags": ["quick", "keto", "breakfast", "protein-rich"]
 }
 ```
@@ -216,6 +220,7 @@ interface Rating {
 | `cuisineType` | ❌ No | Any string |
 | `dietaryInfo` | ❌ No | All booleans default to false |
 | `nutritionInfo` | ❌ No | All numbers must be ≥ 0 |
+| `allergies` | ❌ No | Array of strings (2-50 chars each, auto-normalized to lowercase) |
 | `tags` | ❌ No | Array of strings |
 | `imageUrl` | ❌ No | Valid URL or empty string |
 
@@ -335,6 +340,7 @@ async function submitRecipe(recipeData: RecipeFormData) {
       "fiber": 5,
       "sodium": 650
     },
+    "allergies": ["eggs", "dairy"],
     "tags": ["quick", "keto", "breakfast"],
     "status": "APPROVED",
     "averageRating": 4.5,
@@ -446,6 +452,16 @@ function RecipeDetailsView({ recipe }: { recipe: Recipe }) {
           {recipe.dietaryInfo.isDairyFree && <Badge>🥛 Dairy-Free</Badge>}
           {recipe.dietaryInfo.isKeto && <Badge>🥑 Keto</Badge>}
           {recipe.dietaryInfo.isPaleo && <Badge>🍖 Paleo</Badge>}
+        </div>
+      )}
+
+      {/* Allergen Warning */}
+      {recipe.allergies && recipe.allergies.length > 0 && (
+        <div className="allergen-warning">
+          <h3>⚠️ Allergen Information</h3>
+          <p className="warning-text">
+            Contains: {recipe.allergies.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ')}
+          </p>
         </div>
       )}
 

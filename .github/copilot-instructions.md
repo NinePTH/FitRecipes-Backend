@@ -119,6 +119,7 @@ src/
     * `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to DINNER if not provided
   - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo) as Json
   - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber, sodium) as Json
+  - Optional `allergies` - Array of allergen strings (e.g., ["nuts", "dairy", "eggs"]), auto-normalized to lowercase
   - Requires `chefOrAdmin` middleware - only CHEF and ADMIN roles can submit
   - Creates recipe with `PENDING` status for admin review
   - Returns 201 with full recipe including author information
@@ -197,6 +198,7 @@ src/
   - `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT, default DINNER) with index
   - `dietaryInfo` - Json {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
   - `nutritionInfo` - Json {calories, protein, carbs, fat, fiber, sodium}
+  - `allergies` - String[] array of allergen names (e.g., ["nuts", "dairy", "eggs"])
 - **Comment & Rating Models**: Full community engagement support
 - **Session Model**: Secure session management with expiration
 

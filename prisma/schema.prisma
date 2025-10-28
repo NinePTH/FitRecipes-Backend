@@ -129,6 +129,7 @@ model Recipe {
   dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
   nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber, sodium}
   tags             String[]
+  allergies        String[]        // Common allergens: nuts, dairy, eggs, soy, shellfish, fish, wheat, sesame, etc.
   imageUrl         String?
   status           RecipeStatus    @default(PENDING)
   averageRating    Float           @default(0)

@@ -101,6 +101,15 @@ export const recipeSchema = z.object({
   dietaryInfo: dietaryInfoSchema.optional(),
   nutritionInfo: nutritionInfoSchema.optional(),
   tags: z.array(z.string()).optional(),
+  allergies: z
+    .array(
+      z
+        .string()
+        .min(2, 'Allergen name must be at least 2 characters')
+        .max(50, 'Allergen name must be less than 50 characters')
+        .transform(val => val.trim().toLowerCase())
+    )
+    .optional(),
   imageUrl: z
     .string()
     .url('Image URL must be valid')
