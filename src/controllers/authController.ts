@@ -37,7 +37,7 @@ export async function register(c: Context): Promise<Response> {
         firstError.path.includes('password') &&
         firstError.code === 'too_small'
       ) {
-        message = 'Password must be at least 6 characters';
+        message = 'Password must be at least 8 characters';
       } else if (firstError.path.includes('agreeToTerms')) {
         message = 'Must agree to Terms and Conditions';
       }

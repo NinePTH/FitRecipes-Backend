@@ -5,7 +5,7 @@ export const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   agreeToTerms: z
     .boolean()
     .refine(
@@ -26,7 +26,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
-  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 // Recipe validation schemas
