@@ -116,7 +116,7 @@ src/
   - Ingredients stored as Json array: `[{name, amount, unit}]`
   - **Required fields**:
     * `prepTime` - Integer (1-300 minutes), defaults to 10 if not provided
-    * `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to DINNER if not provided
+    * `mealType` - **Array of enums** (can select multiple from: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to ['DINNER'] if not provided, min 1, max 5
   - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo) as Json
   - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber, sodium) as Json
   - Optional `allergies` - Array of allergen strings (e.g., ["nuts", "dairy", "eggs"]), auto-normalized to lowercase
@@ -195,7 +195,7 @@ src/
 - **User Model**: Includes role-based permissions, email verification, failed login tracking
 - **Recipe Model**: Comprehensive fields with status management (PENDING/APPROVED/REJECTED)
   - `prepTime` - Integer (1-300 minutes, default 10)
-  - `mealType` - Enum (BREAKFAST, LUNCH, DINNER, SNACK, DESSERT, default DINNER) with index
+  - `mealType` - **MealType[] array** (can select multiple: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT, default [DINNER]) with index
   - `dietaryInfo` - Json {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
   - `nutritionInfo` - Json {calories, protein, carbs, fat, fiber, sodium}
   - `allergies` - String[] array of allergen names (e.g., ["nuts", "dairy", "eggs"])
@@ -228,7 +228,7 @@ src/
   - `ingredientSchema` - {name, amount, unit} validation
   - `dietaryInfoSchema` - {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo} with boolean defaults
   - `nutritionInfoSchema` - {calories, protein, carbs, fat, fiber, sodium} with min value validation
-  - `recipeSchema` - Complete recipe validation with nested schemas and defaults (prepTime: 10, mealType: DINNER)
+  - `recipeSchema` - Complete recipe validation with nested schemas and defaults (prepTime: 10, mealType: ['DINNER'])
 
 **Email Service** (`src/utils/email.ts`):
 - `sendEmail(to, subject, content)` - Email delivery via Resend/Nodemailer

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,24 +8,121 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum UserRole {
-  USER
-  CHEF
-  ADMIN
+model comments {
+  id        String   @id
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    String
+  recipeId  String
+  recipes   recipes  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum RecipeStatus {
-  PENDING
-  APPROVED
-  REJECTED
+model ratings {
+  id        String   @id
+  value     Int      @db.SmallInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    String
+  recipeId  String
+  comment   String?
+  recipes   recipes  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
 }
 
-enum MealType {
-  BREAKFAST
-  LUNCH
-  DINNER
-  SNACK
-  DESSERT
+model recipes {
+  id                                String          @id
+  title                             String
+  description                       String
+  instructions                      String[]
+  servings                          Int
+  difficulty                        DifficultyLevel
+  mainIngredient                    String
+  imageUrl                          String?
+  status                            RecipeStatus    @default(PENDING)
+  rejectionReason                   String?
+  averageRating                     Float           @default(0)
+  totalRatings                      Int             @default(0)
+  createdAt                         DateTime        @default(now())
+  updatedAt                         DateTime
+  authorId                          String
+  adminNote                         String?
+  approvedAt                        DateTime?
+  approvedById                      String?
+  cookingTime                       Int
+  dietaryInfo                       Json?
+  nutritionInfo                     Json?
+  rejectedAt                        DateTime?
+  rejectedById                      String?
+  tags                              String[]
+  ingredients                       Json
+  cuisineType                       String?
+  prepTime                          Int             @default(10)
+  allergies                         String[]
+  mealType                          MealType[]      @default([DINNER])
+  comments                          comments[]
+  ratings                           ratings[]
+  users_recipes_approvedByIdTousers users?          @relation("recipes_approvedByIdTousers", fields: [approvedById], references: [id])
+  users_recipes_authorIdTousers     users           @relation("recipes_authorIdTousers", fields: [authorId], references: [id], onDelete: Cascade)
+  users_recipes_rejectedByIdTousers users?          @relation("recipes_rejectedByIdTousers", fields: [rejectedById], references: [id])
+
+  @@index([authorId])
+  @@index([mainIngredient])
+  @@index([mealType])
+  @@index([status])
+}
+
+model sessions {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model users {
+  id                                  String     @id
+  email                               String     @unique
+  password                            String?
+  firstName                           String
+  lastName                            String
+  role                                UserRole   @default(USER)
+  isEmailVerified                     Boolean    @default(false)
+  termsAccepted                       Boolean    @default(false)
+  failedLoginAttempts                 Int        @default(0)
+  blockedUntil                        DateTime?
+  resetToken                          String?
+  resetTokenExpiresAt                 DateTime?
+  googleId                            String?    @unique
+  oauthProvider                       String?
+  createdAt                           DateTime   @default(now())
+  updatedAt                           DateTime
+  emailVerificationToken              String?
+  emailVerificationTokenExpiresAt     DateTime?
+  termsAcceptedAt                     DateTime?
+  comments                            comments[]
+  ratings                             ratings[]
+  recipes_recipes_approvedByIdTousers recipes[]  @relation("recipes_approvedByIdTousers")
+  recipes_recipes_authorIdTousers     recipes[]  @relation("recipes_authorIdTousers")
+  recipes_recipes_rejectedByIdTousers recipes[]  @relation("recipes_rejectedByIdTousers")
+  sessions                            sessions[]
+}
+
+enum CuisineType {
+  ITALIAN
+  CHINESE
+  MEXICAN
+  INDIAN
+  JAPANESE
+  MEDITERRANEAN
+  AMERICAN
+  FRENCH
+  THAI
+  OTHER
 }
 
 enum DietType {
@@ -48,153 +142,22 @@ enum DifficultyLevel {
   HARD
 }
 
-enum CuisineType {
-  ITALIAN
-  CHINESE
-  MEXICAN
-  INDIAN
-  JAPANESE
-  MEDITERRANEAN
-  AMERICAN
-  FRENCH
-  THAI
-  OTHER
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  DESSERT
 }
 
-model User {
-  id                    String    @id @default(cuid())
-  email                 String    @unique
-  password              String?   // Optional for OAuth users
-  firstName             String
-  lastName              String
-  role                  UserRole  @default(USER)
-  isEmailVerified       Boolean   @default(false)
-  termsAccepted         Boolean   @default(false)
-  termsAcceptedAt       DateTime? // When user accepted ToS
-  failedLoginAttempts   Int       @default(0)
-  blockedUntil          DateTime?
-  
-  // Password reset fields
-  resetToken            String?
-  resetTokenExpiresAt   DateTime?
-  
-  // Email verification fields
-  emailVerificationToken         String?
-  emailVerificationTokenExpiresAt DateTime?
-  
-  // OAuth fields
-  googleId              String?   @unique
-  oauthProvider         String?   // 'google', etc.
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  // Relations
-  recipes               Recipe[]
-  approvedRecipes       Recipe[]  @relation("ApprovedRecipes")
-  rejectedRecipes       Recipe[]  @relation("RejectedRecipes")
-  comments              Comment[]
-  ratings               Rating[]
-  sessions              Session[]
-
-  @@map("users")
+enum RecipeStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model Recipe {
-  id               String          @id @default(cuid())
-  title            String
-  description      String
-  mainIngredient   String          // Primary ingredient for filtering
-  ingredients      Json            // Array of {name, amount, unit}
-  instructions     String[]
-  prepTime         Int             @default(10) // in minutes - NEW (default 10 min)
-  cookingTime      Int             // in minutes
-  servings         Int
-  difficulty       DifficultyLevel
-  mealType         MealType        @default(DINNER) // NEW: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT (default DINNER)
-  cuisineType      String?
-  dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
-  nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber, sodium}
-  tags             String[]
-  allergies        String[]        // Common allergens: nuts, dairy, eggs, soy, shellfish, fish, wheat, sesame, etc.
-  imageUrl         String?
-  status           RecipeStatus    @default(PENDING)
-  averageRating    Float           @default(0)
-  totalRatings     Int             @default(0)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  
-  // Approval/Rejection tracking
-  approvedAt       DateTime?
-  approvedById     String?
-  rejectedAt       DateTime?
-  rejectedById     String?
-  rejectionReason  String?
-  adminNote        String?
-  
-  // Foreign Keys
-  authorId         String
-
-  // Relations
-  author           User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  approvedBy       User?     @relation("ApprovedRecipes", fields: [approvedById], references: [id])
-  rejectedBy       User?     @relation("RejectedRecipes", fields: [rejectedById], references: [id])
-  comments         Comment[]
-  ratings          Rating[]
-
-  @@index([status])
-  @@index([mainIngredient])
-  @@index([authorId])
-  @@index([mealType])
-  @@map("recipes")
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Foreign Keys
-  userId    String
-  recipeId  String
-
-  // Relations
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  @@map("comments")
-}
-
-model Rating {
-  id        String   @id @default(cuid())
-  value     Int      @db.SmallInt // 1-5 stars
-  comment   String?  // Optional review comment
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Foreign Keys
-  userId    String
-  recipeId  String
-
-  // Relations
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  // Ensure one rating per user per recipe
-  @@unique([userId, recipeId])
-  @@map("ratings")
+enum UserRole {
+  USER
+  CHEF
+  ADMIN
 }

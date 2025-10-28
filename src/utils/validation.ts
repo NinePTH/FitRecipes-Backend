@@ -90,13 +90,17 @@ export const recipeSchema = z.object({
     errorMap: () => ({ message: 'Difficulty must be EASY, MEDIUM, or HARD' }),
   }),
   mealType: z
-    .enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'DESSERT'], {
-      errorMap: () => ({
-        message:
-          'Meal type must be BREAKFAST, LUNCH, DINNER, SNACK, or DESSERT',
-      }),
-    })
-    .default('DINNER'),
+    .array(
+      z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'DESSERT'], {
+        errorMap: () => ({
+          message:
+            'Each meal type must be BREAKFAST, LUNCH, DINNER, SNACK, or DESSERT',
+        }),
+      })
+    )
+    .min(1, 'At least one meal type is required')
+    .max(5, 'Maximum 5 meal types allowed')
+    .default(['DINNER']),
   cuisineType: z.string().optional(),
   dietaryInfo: dietaryInfoSchema.optional(),
   nutritionInfo: nutritionInfoSchema.optional(),
