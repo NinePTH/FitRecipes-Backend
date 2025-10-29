@@ -6,7 +6,10 @@ import {
   comparePassword,
   generateToken,
 } from '../../src/utils/auth';
-import { registerSchema, resetPasswordSchema } from '../../src/utils/validation';
+import {
+  registerSchema,
+  resetPasswordSchema,
+} from '../../src/utils/validation';
 
 // Mock the database and utilities
 vi.mock('../../src/utils/database', () => ({
@@ -35,7 +38,9 @@ vi.mock('../../src/utils/auth', () => ({
 
 vi.mock('../../src/utils/email', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
-  generateVerificationToken: vi.fn(() => 'mock-verification-token-12345678901234567890'),
+  generateVerificationToken: vi.fn(
+    () => 'mock-verification-token-12345678901234567890'
+  ),
 }));
 
 const mockPrisma = prisma as any;
@@ -347,7 +352,10 @@ describe('AuthService', () => {
       // Arrange
       mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockHashPassword.mockResolvedValue('hashedNewSecure@Pass456');
-      mockPrisma.user.update.mockResolvedValue({ ...mockUser, password: 'hashedNewSecure@Pass456' });
+      mockPrisma.user.update.mockResolvedValue({
+        ...mockUser,
+        password: 'hashedNewSecure@Pass456',
+      });
 
       // Act
       await authService.resetPassword(validResetToken, newPassword);
@@ -393,7 +401,9 @@ describe('AuthService', () => {
         expect(result.success).toBe(false);
         if (!result.success) {
           const errorMessages = result.error.issues.map(issue => issue.message);
-          expect(errorMessages.some(msg => msg.includes('lowercase'))).toBe(true);
+          expect(errorMessages.some(msg => msg.includes('lowercase'))).toBe(
+            true
+          );
         }
       });
 
@@ -406,7 +416,9 @@ describe('AuthService', () => {
         expect(result.success).toBe(false);
         if (!result.success) {
           const errorMessages = result.error.issues.map(issue => issue.message);
-          expect(errorMessages.some(msg => msg.includes('uppercase'))).toBe(true);
+          expect(errorMessages.some(msg => msg.includes('uppercase'))).toBe(
+            true
+          );
         }
       });
 
@@ -432,7 +444,9 @@ describe('AuthService', () => {
         expect(result.success).toBe(false);
         if (!result.success) {
           const errorMessages = result.error.issues.map(issue => issue.message);
-          expect(errorMessages.some(msg => msg.includes('special character'))).toBe(true);
+          expect(
+            errorMessages.some(msg => msg.includes('special character'))
+          ).toBe(true);
         }
       });
 
