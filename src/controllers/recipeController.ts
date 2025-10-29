@@ -8,6 +8,7 @@ import {
 import { createApiResponse } from '@/utils/helpers';
 import { ZodError } from 'zod';
 import { AuthenticatedUser } from '@/types';
+import { uploadRecipeImage } from '@/utils/imageUpload';
 
 /**
  * Submit a new recipe (CHEF or ADMIN only)
@@ -225,6 +226,102 @@ export async function rejectRecipe(c: Context): Promise<Response> {
     }
 
     if (error instanceof Error) {
+      if (error.message === 'Unauthorized: Admin access required') {
+        return c.json(createApiResponse('error', null, error.message), 403);
+      }
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+/**
+ * Upload recipe image (CHEF or ADMIN only)
+ * POST /api/v1/recipes/upload-image
+ */
+export async function uploadImage(c: Context): Promise<Response> {
+  try {
+    // Get the uploaded file from form data
+    const formData = await c.req.formData();
+    const imageFile = formData.get('image');
+
+    // Validate that file exists
+    if (!imageFile || !(imageFile instanceof File)) {
+      return c.json(
+        createApiResponse('error', null, 'No image file provided'),
+        400
+      );
+    }
+
+    // Convert File to Buffer
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Get file metadata
+    const mimeType = imageFile.type;
+    const filename = imageFile.name;
+
+    // Upload with validation and optimization
+    const result = await uploadRecipeImage(buffer, filename, mimeType);
+
+    return c.json(
+      createApiResponse('success', result, 'Image uploaded successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      // Check if it's a validation error
+      if (
+        error.message.includes('Invalid file type') ||
+        error.message.includes('File size exceeds') ||
+        error.message.includes('dimensions')
+      ) {
+        return c.json(createApiResponse('error', null, error.message), 400);
+      }
+
+      // Upload failed
+      return c.json(
+        createApiResponse(
+          'error',
+          null,
+          'Failed to upload image. Please try again'
+        ),
+        500
+      );
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+/**
+ * Delete a recipe (CHEF can delete own, ADMIN can delete any)
+ * DELETE /api/v1/recipes/:id
+ */
+export async function deleteRecipe(c: Context): Promise<Response> {
+  try {
+    const user = c.get('user') as AuthenticatedUser;
+    const recipeId = c.req.param('id');
+
+    // Delete recipe (authorization checked in service)
+    await RecipeService.deleteRecipe(recipeId, user.id, user.role);
+
+    return c.json(
+      createApiResponse('success', null, 'Recipe deleted successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('Unauthorized')) {
+        return c.json(createApiResponse('error', null, error.message), 403);
+      }
       if (error.message === 'Recipe not found') {
         return c.json(createApiResponse('error', null, error.message), 404);
       }

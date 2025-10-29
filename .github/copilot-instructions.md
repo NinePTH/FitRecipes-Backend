@@ -101,22 +101,37 @@ src/
 - **Email Service**: Configured with Resend (development mode logs to console)
 
 ### Recipe Management (`/api/v1/recipes`)
-**Status**: ✅ PARTIAL - Submission and approval implemented
+**Status**: ✅ PARTIAL - Submission, approval, image upload, and deletion implemented
+- `POST /upload-image` - Upload recipe image (Chef/Admin, 50/hour rate limit) ✅ COMPLETE
 - `POST /` - Submit recipe (Chef role) ✅ COMPLETE
 - `GET /:id` - Recipe details with ratings and authorization checks ✅ COMPLETE
+- `DELETE /:id` - Delete recipe with automatic image cleanup (Chef own/Admin any) ✅ COMPLETE
 - ⏳ `GET /search` - Multi-ingredient search with priority matching (TODO)
 - ⏳ `GET /` - Browse with filtering and sorting (TODO)
 - ⏳ `GET /recommendations` - Personalized recommendations (TODO)
 - ⏳ `PUT /:id` - Update recipe (Chef role, ownership validation) (TODO)
-- ⏳ `DELETE /:id` - Delete recipe (Chef role, ownership validation) (TODO)
 
 **Implementation Details**:
+- **Image Upload** (`POST /upload-image`):
+  - Multipart form data with `image` field
+  - File validation: JPEG, PNG, WebP, GIF only (MIME type + extension check)
+  - Size limit: 5MB maximum
+  - Dimension validation: 400x300 to 4000x3000 pixels
+  - Automatic optimization: Resizes to 1200x900 max, quality 85%
+  - Uses Sharp library for image processing
+  - Uploads to Supabase Storage in `recipes/` folder
+  - Sanitized filenames: `recipe-{timestamp}-{random}.{ext}`
+  - Rate limit: 50 uploads per hour per IP
+  - Returns: imageUrl, publicId, width, height, format, size
+  - Implemented in: `src/utils/imageUpload.ts`, `src/controllers/recipeController.ts`
+
 - **Recipe Submission** (`POST /`):
   - Uses comprehensive `recipeSchema` from `src/utils/validation.ts` with nested validation
   - Ingredients stored as Json array: `[{name, amount, unit}]`
   - **Required fields**:
     * `prepTime` - Integer (1-300 minutes), defaults to 10 if not provided
     * `mealType` - **Array of enums** (can select multiple from: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to ['DINNER'] if not provided, min 1, max 5
+  - Optional `imageUrl` - URL returned from `/upload-image` endpoint
   - Optional `dietaryInfo` (isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo) as Json
   - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber, sodium) as Json
   - Optional `allergies` - Array of allergen strings (e.g., ["nuts", "dairy", "eggs"]), auto-normalized to lowercase
@@ -131,6 +146,13 @@ src/
     * `APPROVED` recipes: All authenticated users can view
   - Includes author information and ratings with reviewer names
   - Returns 403 if user lacks permission, 404 if not found
+
+- **Recipe Deletion** (`DELETE /:id`):
+  - Authorization: Chef can delete own recipes, Admin can delete any
+  - Automatic image cleanup from Supabase Storage
+  - Cascade deletion of comments and ratings
+  - Returns 403 if unauthorized, 404 if not found
+  - Implemented in: `src/services/recipeService.ts` (deleteRecipe)
   
 - **Implemented in**:
   - Service: `src/services/recipeService.ts` (submitRecipe, getRecipeById)

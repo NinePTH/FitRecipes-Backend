@@ -78,3 +78,12 @@ export const rateLimitMiddleware = (
     await next();
   };
 };
+
+/**
+ * Strict rate limiting for image uploads
+ * 50 uploads per hour per user
+ */
+export const uploadRateLimitMiddleware = rateLimitMiddleware(
+  60 * 60 * 1000, // 1 hour
+  50 // 50 uploads per hour
+);

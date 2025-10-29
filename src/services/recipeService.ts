@@ -1,4 +1,5 @@
 import { prisma } from '@/utils/database';
+import { deleteRecipeImage, extractPublicIdFromUrl } from '@/utils/imageUpload';
 
 interface RecipeInput {
   title: string;
@@ -259,4 +260,52 @@ export async function rejectRecipe(
   });
 
   return updatedRecipe;
+}
+
+/**
+ * Delete a recipe (CHEF can delete own, ADMIN can delete any)
+ */
+export async function deleteRecipe(
+  recipeId: string,
+  userId: string,
+  userRole: 'USER' | 'CHEF' | 'ADMIN'
+): Promise<void> {
+  // Find the recipe
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    select: {
+      id: true,
+      authorId: true,
+      imageUrl: true,
+    },
+  });
+
+  if (!recipe) {
+    throw new Error('Recipe not found');
+  }
+
+  // Authorization check
+  if (userRole !== 'ADMIN' && recipe.authorId !== userId) {
+    throw new Error(
+      'Unauthorized: You can only delete your own recipes unless you are an admin'
+    );
+  }
+
+  // Delete associated image from storage if exists
+  if (recipe.imageUrl) {
+    try {
+      const publicId = extractPublicIdFromUrl(recipe.imageUrl);
+      if (publicId) {
+        await deleteRecipeImage(publicId);
+      }
+    } catch (error) {
+      // Log error but don't fail the deletion
+      console.error('Failed to delete recipe image:', error);
+    }
+  }
+
+  // Delete recipe from database (cascade will delete comments and ratings)
+  await prisma.recipe.delete({
+    where: { id: recipeId },
+  });
 }
