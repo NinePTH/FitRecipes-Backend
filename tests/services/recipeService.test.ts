@@ -42,7 +42,7 @@ describe('RecipeService', () => {
         },
       };
 
-      vi.mocked(prisma.recipe.create).mockResolvedValue(mockRecipe as any);
+      vi.mocked(prisma.recipes.create).mockResolvedValue(mockRecipe as any);
 
       const result = await RecipeService.submitRecipe('user123', {
         title: 'Test Recipe',
@@ -76,7 +76,7 @@ describe('RecipeService', () => {
         ratings: [],
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(mockRecipe as any);
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(mockRecipe as any);
 
       const result = await RecipeService.getRecipeById(
         'recipe123',
@@ -103,7 +103,7 @@ describe('RecipeService', () => {
         ratings: [],
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(mockRecipe as any);
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(mockRecipe as any);
 
       const result = await RecipeService.getRecipeById(
         'recipe123',
@@ -129,7 +129,7 @@ describe('RecipeService', () => {
         ratings: [],
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(mockRecipe as any);
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(mockRecipe as any);
 
       await expect(
         RecipeService.getRecipeById('recipe123', 'otherUser', 'USER')
@@ -137,7 +137,7 @@ describe('RecipeService', () => {
     });
 
     it('should throw error for non-existent recipe', async () => {
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(null);
 
       await expect(
         RecipeService.getRecipeById('nonexistent', 'user123', 'USER')
@@ -160,10 +160,10 @@ describe('RecipeService', () => {
         approvedBy: { id: 'admin123', firstName: 'Admin', lastName: 'User' },
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(
         mockPendingRecipe as any
       );
-      vi.mocked(prisma.recipe.update).mockResolvedValue(
+      vi.mocked(prisma.recipes.update).mockResolvedValue(
         mockApprovedRecipe as any
       );
 
@@ -183,7 +183,7 @@ describe('RecipeService', () => {
         status: 'APPROVED',
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(
         mockApprovedRecipe as any
       );
 
@@ -209,8 +209,8 @@ describe('RecipeService', () => {
         rejectedBy: { id: 'admin123', firstName: 'Admin', lastName: 'User' },
       };
 
-      vi.mocked(prisma.recipe.findUnique).mockResolvedValue(mockRecipe as any);
-      vi.mocked(prisma.recipe.update).mockResolvedValue(
+      vi.mocked(prisma.recipes.findUnique).mockResolvedValue(mockRecipe as any);
+      vi.mocked(prisma.recipes.update).mockResolvedValue(
         mockRejectedRecipe as any
       );
 
@@ -232,8 +232,8 @@ describe('RecipeService', () => {
         { id: 'recipe2', status: 'PENDING', author: {} },
       ];
 
-      vi.mocked(prisma.recipe.findMany).mockResolvedValue(mockRecipes as any);
-      vi.mocked(prisma.recipe.count).mockResolvedValue(15);
+      vi.mocked(prisma.recipes.findMany).mockResolvedValue(mockRecipes as any);
+      vi.mocked(prisma.recipes.count).mockResolvedValue(15);
 
       const result = await RecipeService.getPendingRecipes(1, 10);
 
