@@ -424,3 +424,57 @@ export async function getMyRecipes(c: Context): Promise<Response> {
     );
   }
 }
+
+/**
+ * Get approval statistics (ADMIN only)
+ */
+export async function getApprovalStats(c: Context): Promise<Response> {
+  try {
+    const period =
+      (c.req.query('period') as 'today' | 'week' | 'month' | 'all') || 'today';
+
+    const stats = await RecipeService.getApprovalStats(period);
+
+    return c.json(
+      createApiResponse('success', stats, 'Statistics retrieved successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+/**
+ * Get recipe by ID - Admin view (can see any status)
+ */
+export async function getRecipeByIdAdmin(c: Context): Promise<Response> {
+  try {
+    const recipeId = c.req.param('id');
+
+    const recipe = await RecipeService.getRecipeByIdAdmin(recipeId);
+
+    return c.json(
+      createApiResponse('success', { recipe }, 'Recipe retrieved successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Recipe not found') {
+        return c.json(createApiResponse('error', null, error.message), 404);
+      }
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}

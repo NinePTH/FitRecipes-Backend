@@ -102,9 +102,8 @@ export const recipeSchema = z.object({
     .max(5, 'Maximum 5 meal types allowed')
     .default(['DINNER']),
   cuisineType: z.string().optional(),
-  dietaryInfo: dietaryInfoSchema.optional(),
+  dietaryInfo: dietaryInfoSchema, // REQUIRED: Must provide dietary information
   nutritionInfo: nutritionInfoSchema.optional(),
-  tags: z.array(z.string()).optional(),
   allergies: z
     .array(
       z

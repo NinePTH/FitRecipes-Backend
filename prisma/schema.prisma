@@ -126,9 +126,8 @@ model Recipe {
   difficulty       DifficultyLevel
   mealType         MealType[]      @default([DINNER]) // CHANGED: Array instead of single value
   cuisineType      String?
-  dietaryInfo      Json?           // {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
+  dietaryInfo      Json            // REQUIRED: {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
   nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber, sodium}
-  tags             String[]
   allergies        String[]        // NEW: Common allergens: nuts, dairy, eggs, soy, shellfish, fish, wheat, sesame, etc.
   imageUrls        String[]        @default([]) // Multiple images (max 3)
   status           RecipeStatus    @default(PENDING)

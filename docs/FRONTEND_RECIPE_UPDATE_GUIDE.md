@@ -88,7 +88,7 @@ interface RecipeFormData {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   mealType: Array<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'DESSERT'>;
   cuisineType?: string;
-  dietaryInfo?: {
+  dietaryInfo: { // REQUIRED field
     isVegetarian: boolean;
     isVegan: boolean;
     isGlutenFree: boolean;
@@ -104,7 +104,6 @@ interface RecipeFormData {
     fiber: number;
     sodium: number;
   };
-  tags?: string[];
   allergies?: string[];
   imageUrl?: string;
 }
@@ -171,7 +170,6 @@ export default function EditRecipePage() {
         cuisineType: recipe.cuisineType,
         dietaryInfo: recipe.dietaryInfo,
         nutritionInfo: recipe.nutritionInfo,
-        tags: recipe.tags,
         allergies: recipe.allergies,
         imageUrl: recipe.imageUrl,
       });
@@ -446,7 +444,6 @@ interface RecipeFormData {
   cuisineType?: string;
   dietaryInfo?: DietaryInfo;
   nutritionInfo?: NutritionInfo;
-  tags?: string[];
   allergies?: string[];
   imageUrls?: string[]; // Array of image URLs (max 3)
 }

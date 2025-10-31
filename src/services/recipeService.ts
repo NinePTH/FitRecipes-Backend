@@ -28,7 +28,6 @@ interface RecipeInput {
     fat: number;
     fiber: number;
   };
-  tags?: string[];
   imageUrls?: string[];
 }
 
@@ -43,7 +42,6 @@ export async function submitRecipe(authorId: string, data: RecipeInput) {
       ingredients: data.ingredients as any,
       dietaryInfo: data.dietaryInfo as any,
       nutritionInfo: data.nutritionInfo as any,
-      tags: data.tags || [],
       status: 'PENDING',
     },
     include: {
@@ -140,7 +138,6 @@ export async function updateRecipe(
       ingredients: data.ingredients as any,
       dietaryInfo: data.dietaryInfo as any,
       nutritionInfo: data.nutritionInfo as any,
-      tags: data.tags,
       imageUrls: data.imageUrls,
       // Reset to PENDING status if it was REJECTED (for re-review)
       status: existingRecipe.status === 'REJECTED' ? 'PENDING' : undefined,
@@ -486,4 +483,84 @@ export async function getMyRecipes(
       rejected,
     },
   };
+}
+
+/**
+ * Get approval statistics
+ */
+export async function getApprovalStats(
+  period: 'today' | 'week' | 'month' | 'all' = 'today'
+) {
+  const now = new Date();
+  let startDate: Date | undefined;
+
+  if (period === 'today') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (period === 'week') {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (period === 'month') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  const [pending, approvedToday, rejectedToday] = await Promise.all([
+    prisma.recipe.count({ where: { status: 'PENDING' } }),
+    prisma.recipe.count({
+      where: {
+        status: 'APPROVED',
+        approvedAt: startDate ? { gte: startDate } : undefined,
+      },
+    }),
+    prisma.recipe.count({
+      where: {
+        status: 'REJECTED',
+        rejectedAt: startDate ? { gte: startDate } : undefined,
+      },
+    }),
+  ]);
+
+  return {
+    pending,
+    approvedToday,
+    rejectedToday,
+  };
+}
+
+/**
+ * Get recipe by ID - Admin view (can see any status)
+ */
+export async function getRecipeByIdAdmin(recipeId: string) {
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+      },
+      approvedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      rejectedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+
+  if (!recipe) {
+    throw new Error('Recipe not found');
+  }
+
+  return recipe;
 }
