@@ -53,6 +53,60 @@ export async function submitRecipe(c: Context): Promise<Response> {
 }
 
 /**
+ * Update an existing recipe (CHEF can update own, ADMIN can update any)
+ * PUT /api/v1/recipes/:id
+ */
+export async function updateRecipe(c: Context): Promise<Response> {
+  try {
+    const user = c.get('user') as AuthenticatedUser;
+    const recipeId = c.req.param('id');
+    const body = await c.req.json();
+
+    // Validate input
+    const validatedData = recipeSchema.parse(body);
+
+    // Update recipe
+    const recipe = await RecipeService.updateRecipe(
+      recipeId,
+      user.id,
+      user.role,
+      validatedData
+    );
+
+    return c.json(
+      createApiResponse('success', { recipe }, 'Recipe updated successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const errors = error.errors.map(err => err.message);
+      return c.json(
+        createApiResponse('error', null, 'Validation failed', errors),
+        400
+      );
+    }
+
+    if (error instanceof Error) {
+      if (error.message.includes('Unauthorized')) {
+        return c.json(createApiResponse('error', null, error.message), 403);
+      }
+      if (error.message === 'Recipe not found') {
+        return c.json(createApiResponse('error', null, error.message), 404);
+      }
+      if (error.message.includes('Cannot update approved recipes')) {
+        return c.json(createApiResponse('error', null, error.message), 400);
+      }
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+/**
  * Get recipe by ID
  */
 export async function getRecipeById(c: Context): Promise<Response> {
@@ -325,6 +379,42 @@ export async function deleteRecipe(c: Context): Promise<Response> {
       if (error.message === 'Recipe not found') {
         return c.json(createApiResponse('error', null, error.message), 404);
       }
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+/**
+ * Get user's own recipes (My Recipes page)
+ * GET /api/v1/recipes/my-recipes
+ */
+export async function getMyRecipes(c: Context): Promise<Response> {
+  try {
+    const user = c.get('user') as AuthenticatedUser;
+    const status = c.req.query('status') as
+      | 'PENDING'
+      | 'APPROVED'
+      | 'REJECTED'
+      | undefined;
+
+    // Get user's recipes
+    const result = await RecipeService.getMyRecipes(user.id, status);
+
+    return c.json(
+      createApiResponse(
+        'success',
+        result,
+        'User recipes retrieved successfully'
+      ),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
       return c.json(createApiResponse('error', null, error.message), 400);
     }
 

@@ -114,11 +114,11 @@ export const recipeSchema = z.object({
         .transform(val => val.trim().toLowerCase())
     )
     .optional(),
-  imageUrl: z
-    .string()
-    .url('Image URL must be valid')
+  imageUrls: z
+    .array(z.string().url('Each image URL must be valid'))
+    .max(3, 'Maximum 3 images allowed per recipe')
     .optional()
-    .or(z.literal('')),
+    .default([]),
 });
 
 // Recipe rejection schema

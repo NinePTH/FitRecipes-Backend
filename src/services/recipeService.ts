@@ -29,7 +29,7 @@ interface RecipeInput {
     fiber: number;
   };
   tags?: string[];
-  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 /**
@@ -59,6 +59,109 @@ export async function submitRecipe(authorId: string, data: RecipeInput) {
   });
 
   return recipe;
+}
+
+/**
+ * Update an existing recipe (CHEF can update own, ADMIN can update any)
+ * Only PENDING and REJECTED recipes can be updated
+ * Handles cleanup of removed images from storage
+ */
+export async function updateRecipe(
+  recipeId: string,
+  userId: string,
+  userRole: string,
+  data: Partial<RecipeInput>
+) {
+  // Find the recipe with current imageUrls
+  const existingRecipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    select: {
+      id: true,
+      authorId: true,
+      status: true,
+      imageUrls: true, // Get current images
+    },
+  });
+
+  if (!existingRecipe) {
+    throw new Error('Recipe not found');
+  }
+
+  // Authorization check
+  if (userRole !== 'ADMIN' && existingRecipe.authorId !== userId) {
+    throw new Error(
+      'Unauthorized: You can only update your own recipes unless you are an admin'
+    );
+  }
+
+  // Status check - only PENDING and REJECTED recipes can be updated
+  if (existingRecipe.status === 'APPROVED') {
+    throw new Error(
+      'Cannot update approved recipes. Please contact an admin if changes are needed.'
+    );
+  }
+
+  // Handle image cleanup if imageUrls changed
+  if (data.imageUrls !== undefined) {
+    const oldImageUrls = existingRecipe.imageUrls || [];
+    const newImageUrls = data.imageUrls || [];
+
+    // Find images that were removed (in old but not in new)
+    const removedImages = oldImageUrls.filter(
+      url => !newImageUrls.includes(url)
+    );
+
+    // Delete removed images from Supabase Storage (async, don't wait)
+    if (removedImages.length > 0) {
+      Promise.all(
+        removedImages.map(async imageUrl => {
+          try {
+            const publicId = extractPublicIdFromUrl(imageUrl);
+            if (publicId) {
+              await deleteRecipeImage(publicId);
+            }
+          } catch (error) {
+            // Log but don't fail the update
+            console.error(`Failed to delete image ${imageUrl}:`, error);
+          }
+        })
+      ).catch(err => {
+        // Silently fail - images can be cleaned up later
+        console.error('Image cleanup error:', err);
+      });
+    }
+  }
+
+  // Update the recipe
+  const updatedRecipe = await prisma.recipe.update({
+    where: { id: recipeId },
+    data: {
+      ...data,
+      ingredients: data.ingredients as any,
+      dietaryInfo: data.dietaryInfo as any,
+      nutritionInfo: data.nutritionInfo as any,
+      tags: data.tags,
+      imageUrls: data.imageUrls,
+      // Reset to PENDING status if it was REJECTED (for re-review)
+      status: existingRecipe.status === 'REJECTED' ? 'PENDING' : undefined,
+      // Clear rejection reason if re-submitting
+      rejectionReason: existingRecipe.status === 'REJECTED' ? null : undefined,
+      rejectedAt: existingRecipe.status === 'REJECTED' ? null : undefined,
+      rejectedById: existingRecipe.status === 'REJECTED' ? null : undefined,
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return updatedRecipe;
 }
 
 /**
@@ -276,7 +379,7 @@ export async function deleteRecipe(
     select: {
       id: true,
       authorId: true,
-      imageUrl: true,
+      imageUrls: true, // Changed from imageUrl to imageUrls
     },
   });
 
@@ -291,21 +394,96 @@ export async function deleteRecipe(
     );
   }
 
-  // Delete associated image from storage if exists
-  if (recipe.imageUrl) {
-    try {
-      const publicId = extractPublicIdFromUrl(recipe.imageUrl);
-      if (publicId) {
-        await deleteRecipeImage(publicId);
-      }
-    } catch (error) {
-      // Log error but don't fail the deletion
-      console.error('Failed to delete recipe image:', error);
-    }
+  // Delete all associated images from storage if exist
+  if (recipe.imageUrls && recipe.imageUrls.length > 0) {
+    await Promise.all(
+      recipe.imageUrls.map(async imageUrl => {
+        try {
+          const publicId = extractPublicIdFromUrl(imageUrl);
+          if (publicId) {
+            await deleteRecipeImage(publicId);
+          }
+        } catch (error) {
+          // Log error but don't fail the deletion
+          console.error(`Failed to delete recipe image ${imageUrl}:`, error);
+        }
+      })
+    );
   }
 
   // Delete recipe from database (cascade will delete comments and ratings)
   await prisma.recipe.delete({
     where: { id: recipeId },
   });
+}
+
+/**
+ * Get user's own recipes (My Recipes page)
+ */
+export async function getMyRecipes(
+  userId: string,
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+) {
+  const where: any = { authorId: userId };
+
+  if (status) {
+    where.status = status;
+  }
+
+  // Get recipes and counts
+  const [recipes, total, approved, pending, rejected] = await Promise.all([
+    prisma.recipe.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
+    }),
+    prisma.recipe.count({ where: { authorId: userId } }),
+    prisma.recipe.count({ where: { authorId: userId, status: 'APPROVED' } }),
+    prisma.recipe.count({ where: { authorId: userId, status: 'PENDING' } }),
+    prisma.recipe.count({ where: { authorId: userId, status: 'REJECTED' } }),
+  ]);
+
+  // Transform recipes to include totalComments
+  const recipesWithComments = recipes.map(recipe => ({
+    id: recipe.id,
+    title: recipe.title,
+    description: recipe.description,
+    imageUrls: recipe.imageUrls, // Changed from imageUrl to imageUrls
+    prepTime: recipe.prepTime,
+    cookingTime: recipe.cookingTime,
+    servings: recipe.servings,
+    mainIngredient: recipe.mainIngredient,
+    cuisineType: recipe.cuisineType,
+    status: recipe.status,
+    rejectionReason: recipe.rejectionReason,
+    averageRating: recipe.averageRating,
+    totalRatings: recipe.totalRatings,
+    totalComments: recipe._count.comments,
+    createdAt: recipe.createdAt,
+    updatedAt: recipe.updatedAt,
+  }));
+
+  return {
+    recipes: recipesWithComments,
+    meta: {
+      total,
+      approved,
+      pending,
+      rejected,
+    },
+  };
 }
