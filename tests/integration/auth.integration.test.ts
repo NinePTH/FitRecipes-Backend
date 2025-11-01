@@ -83,7 +83,7 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: true,
       };
 
@@ -161,7 +161,7 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'existing@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: true,
       };
 
@@ -189,7 +189,7 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: false, // Not agreed
       };
 
