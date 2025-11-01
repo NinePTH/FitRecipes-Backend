@@ -176,7 +176,7 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     throw new Error('Account temporarily locked');
   }
 
-  // Check if user has a password (OAuth users might not)
+  // Check if user has a password (OAuth user might not)
   if (!user.password) {
     throw new Error(
       'This account is linked to Google. Please use "Sign in with Google" instead of email/password.'
@@ -441,7 +441,7 @@ export async function createOrUpdateOAuthUser(googleUser: {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      termsAccepted: user.termsAccepted, // Include ToS status for OAuth users
+      termsAccepted: user.termsAccepted, // Include ToS status for OAuth user
       isOAuthUser: true, // This is always an OAuth user (Google)
     },
     token,
@@ -523,7 +523,7 @@ export async function resendVerificationEmail(
 }
 
 /**
- * Accept Terms of Service (for OAuth users)
+ * Accept Terms of Service (for OAuth user)
  */
 export async function acceptTerms(
   userId: string
@@ -555,7 +555,7 @@ export async function acceptTerms(
 }
 
 /**
- * Decline Terms of Service (for OAuth users) - logout user
+ * Decline Terms of Service (for OAuth user) - logout user
  */
 export async function declineTerms(
   userId: string
@@ -568,7 +568,7 @@ export async function declineTerms(
     throw new Error('User not found');
   }
 
-  // Remove all sessions for this user (logout)
+  // Remove all session for this user (logout)
   await prisma.session.deleteMany({
     where: { userId },
   });
