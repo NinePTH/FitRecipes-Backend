@@ -5,6 +5,11 @@ import { uploadRateLimitMiddleware } from '@/middlewares/rateLimit';
 
 const recipeRoutes = new Hono();
 
+// Browse routes (must come before /:id to avoid route conflicts)
+recipeRoutes.get('/recommended', recipeController.getRecommendedRecipes);
+recipeRoutes.get('/trending', recipeController.getTrendingRecipes);
+recipeRoutes.get('/new', recipeController.getNewRecipes);
+
 // POST /recipes/upload-image - Upload recipe image (CHEF or ADMIN only)
 recipeRoutes.post(
   '/upload-image',
@@ -49,8 +54,7 @@ recipeRoutes.delete(
   recipeController.deleteRecipe
 );
 
-// TODO: GET /recipes/search - Search recipes (to be implemented)
-// TODO: GET /recipes - Browse and filter recipes (to be implemented)
-// TODO: GET /recipes/recommendations - Personalized recommendations (to be implemented)
+// GET /recipes - Browse recipes with filters (must be last, after specific routes)
+recipeRoutes.get('/', recipeController.browseRecipes);
 
 export default recipeRoutes;

@@ -564,3 +564,292 @@ export async function getRecipeByIdAdmin(recipeId: string) {
 
   return recipe;
 }
+
+// ============================================================================
+// BROWSE RECIPES
+// ============================================================================
+
+interface BrowseFilters {
+  mealType?: string[];
+  difficulty?: string[];
+  cuisineType?: string;
+  mainIngredient?: string;
+  maxPrepTime?: number;
+  isVegetarian?: boolean;
+  isVegan?: boolean;
+  isGlutenFree?: boolean;
+  isDairyFree?: boolean;
+  isKeto?: boolean;
+  isPaleo?: boolean;
+}
+
+/**
+ * Browse recipes with filters, sorting, and pagination
+ * Only returns APPROVED recipes
+ */
+export async function browseRecipes(
+  page: number = 1,
+  limit: number = 12,
+  sortBy: string = 'rating',
+  sortOrder: 'asc' | 'desc' = 'desc',
+  filters: BrowseFilters = {}
+) {
+  const skip = (page - 1) * limit;
+
+  // Build where clause
+  const where: any = {
+    status: 'APPROVED', // Only approved recipes
+  };
+
+  // Apply filters
+  if (filters.mealType && filters.mealType.length > 0) {
+    where.mealType = { hasSome: filters.mealType };
+  }
+
+  if (filters.difficulty && filters.difficulty.length > 0) {
+    where.difficulty = { in: filters.difficulty };
+  }
+
+  if (filters.cuisineType) {
+    where.cuisineType = { contains: filters.cuisineType, mode: 'insensitive' };
+  }
+
+  if (filters.mainIngredient) {
+    where.mainIngredient = {
+      contains: filters.mainIngredient,
+      mode: 'insensitive',
+    };
+  }
+
+  // Dietary filters
+  if (filters.isVegetarian !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isVegetarian'],
+      equals: filters.isVegetarian,
+    };
+  }
+
+  if (filters.isVegan !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isVegan'],
+      equals: filters.isVegan,
+    };
+  }
+
+  if (filters.isGlutenFree !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isGlutenFree'],
+      equals: filters.isGlutenFree,
+    };
+  }
+
+  if (filters.isDairyFree !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isDairyFree'],
+      equals: filters.isDairyFree,
+    };
+  }
+
+  if (filters.isKeto !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isKeto'],
+      equals: filters.isKeto,
+    };
+  }
+
+  if (filters.isPaleo !== undefined) {
+    where.dietaryInfo = {
+      ...where.dietaryInfo,
+      path: ['isPaleo'],
+      equals: filters.isPaleo,
+    };
+  }
+
+  // Determine orderBy
+  let orderBy: any = {};
+  switch (sortBy) {
+    case 'recent':
+      orderBy = { createdAt: sortOrder };
+      break;
+    case 'prep-time-asc':
+      // This will be handled by sorting after query
+      orderBy = { prepTime: 'asc' };
+      break;
+    case 'prep-time-desc':
+      // This will be handled by sorting after query
+      orderBy = { prepTime: 'desc' };
+      break;
+    case 'rating':
+    default:
+      orderBy = { averageRating: sortOrder };
+      break;
+  }
+
+  // Fetch recipes
+  const recipes = await prisma.recipe.findMany({
+    where,
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy,
+    skip,
+    take: limit,
+  });
+
+  // Filter by maxPrepTime if specified (prepTime + cookingTime)
+  let filteredRecipes = recipes;
+  if (filters.maxPrepTime !== undefined) {
+    filteredRecipes = recipes.filter(
+      recipe => recipe.prepTime + recipe.cookingTime <= filters.maxPrepTime!
+    );
+  }
+
+  // Get total count with same filters
+  const total = await prisma.recipe.count({ where });
+
+  return {
+    recipes: filteredRecipes,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page * limit < total,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+/**
+ * Get recommended recipes (personalized if userId provided)
+ */
+export async function getRecommendedRecipes(
+  limit: number = 12,
+  userId?: string
+) {
+  // For now, return popular recipes (high rating + high rating count)
+  // TODO: Implement personalization based on user's past ratings
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      status: 'APPROVED',
+      totalRatings: { gte: 1 }, // At least 1 rating
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [{ averageRating: 'desc' }, { totalRatings: 'desc' }],
+    take: limit,
+  });
+
+  return {
+    recipes,
+    meta: {
+      recommendationType: userId ? 'personalized' : 'popular',
+      total: recipes.length,
+    },
+  };
+}
+
+/**
+ * Get trending recipes (high engagement in last 7-30 days)
+ */
+export async function getTrendingRecipes(
+  limit: number = 12,
+  period: '7d' | '30d' = '7d'
+) {
+  const daysAgo = period === '7d' ? 7 : 30;
+  const dateThreshold = new Date();
+  dateThreshold.setDate(dateThreshold.getDate() - daysAgo);
+
+  // Get recipes with recent ratings or comments
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      status: 'APPROVED',
+      OR: [
+        {
+          ratings: {
+            some: {
+              createdAt: { gte: dateThreshold },
+            },
+          },
+        },
+        {
+          comments: {
+            some: {
+              createdAt: { gte: dateThreshold },
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [{ averageRating: 'desc' }, { totalComments: 'desc' }],
+    take: limit,
+  });
+
+  return {
+    recipes,
+    meta: {
+      period,
+      total: recipes.length,
+    },
+  };
+}
+
+/**
+ * Get new recipes (recently approved)
+ */
+export async function getNewRecipes(limit: number = 12) {
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      status: 'APPROVED',
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: { approvedAt: 'desc' },
+    take: limit,
+  });
+
+  return {
+    recipes,
+    meta: {
+      total: recipes.length,
+    },
+  };
+}

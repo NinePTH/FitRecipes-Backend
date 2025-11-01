@@ -133,6 +133,7 @@ model Recipe {
   status           RecipeStatus    @default(PENDING)
   averageRating    Float           @default(0)
   totalRatings     Int             @default(0)
+  totalComments    Int             @default(0)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   
@@ -175,13 +176,15 @@ model Comment {
   user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
+  @@index([recipeId])
+  @@index([userId])
+  @@index([createdAt])
   @@map("comments")
 }
 
 model Rating {
   id        String   @id @default(cuid())
-  value     Int      @db.SmallInt // 1-5 stars
-  comment   String?  // Optional review comment
+  rating    Int      @db.SmallInt // 1-5 stars (renamed from value)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -195,5 +198,7 @@ model Rating {
 
   // Ensure one rating per user per recipe
   @@unique([userId, recipeId])
+  @@index([recipeId])
+  @@index([userId])
   @@map("ratings")
 }

@@ -125,8 +125,7 @@ export async function getRecipeById(c: Context): Promise<Response> {
       id: rating.id,
       userId: rating.userId,
       userName: `${rating.user.firstName} ${rating.user.lastName}`,
-      rating: rating.value,
-      comment: rating.comment,
+      rating: rating.rating,
       createdAt: rating.createdAt,
     }));
 
@@ -472,6 +471,146 @@ export async function getRecipeByIdAdmin(c: Context): Promise<Response> {
       return c.json(createApiResponse('error', null, error.message), 400);
     }
 
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+// ============================================================================
+// BROWSE RECIPES
+// ============================================================================
+
+export async function browseRecipes(c: Context): Promise<Response> {
+  try {
+    const page = parseInt(c.req.query('page') || '1', 10);
+    const limit = Math.min(parseInt(c.req.query('limit') || '12', 10), 50);
+    const sortBy = c.req.query('sortBy') || 'rating';
+    const sortOrder = (c.req.query('sortOrder') || 'desc') as 'asc' | 'desc';
+
+    const filters: any = {};
+    const mealTypeParam = c.req.queries('mealType');
+    if (mealTypeParam && mealTypeParam.length > 0)
+      filters.mealType = mealTypeParam;
+
+    const difficultyParam = c.req.queries('difficulty');
+    if (difficultyParam && difficultyParam.length > 0)
+      filters.difficulty = difficultyParam;
+
+    const cuisineType = c.req.query('cuisineType');
+    if (cuisineType) filters.cuisineType = cuisineType;
+
+    const mainIngredient = c.req.query('mainIngredient');
+    if (mainIngredient) filters.mainIngredient = mainIngredient;
+
+    const maxPrepTime = c.req.query('maxPrepTime');
+    if (maxPrepTime) filters.maxPrepTime = parseInt(maxPrepTime, 10);
+
+    const isVegetarian = c.req.query('isVegetarian');
+    if (isVegetarian) filters.isVegetarian = isVegetarian === 'true';
+
+    const isVegan = c.req.query('isVegan');
+    if (isVegan) filters.isVegan = isVegan === 'true';
+
+    const isGlutenFree = c.req.query('isGlutenFree');
+    if (isGlutenFree) filters.isGlutenFree = isGlutenFree === 'true';
+
+    const isDairyFree = c.req.query('isDairyFree');
+    if (isDairyFree) filters.isDairyFree = isDairyFree === 'true';
+
+    const isKeto = c.req.query('isKeto');
+    if (isKeto) filters.isKeto = isKeto === 'true';
+
+    const isPaleo = c.req.query('isPaleo');
+    if (isPaleo) filters.isPaleo = isPaleo === 'true';
+
+    const result = await RecipeService.browseRecipes(
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      filters
+    );
+    return c.json(
+      createApiResponse('success', result, 'Recipes retrieved successfully'),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+export async function getRecommendedRecipes(c: Context): Promise<Response> {
+  try {
+    const limit = Math.min(parseInt(c.req.query('limit') || '12', 10), 50);
+    const user = c.get('user') as AuthenticatedUser | undefined;
+    const result = await RecipeService.getRecommendedRecipes(limit, user?.id);
+    return c.json(
+      createApiResponse(
+        'success',
+        result,
+        'Recommendations retrieved successfully'
+      ),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+export async function getTrendingRecipes(c: Context): Promise<Response> {
+  try {
+    const limit = Math.min(parseInt(c.req.query('limit') || '12', 10), 50);
+    const period = (c.req.query('period') || '7d') as '7d' | '30d';
+    const result = await RecipeService.getTrendingRecipes(limit, period);
+    return c.json(
+      createApiResponse(
+        'success',
+        result,
+        'Trending recipes retrieved successfully'
+      ),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
+    return c.json(
+      createApiResponse('error', null, 'Internal server error'),
+      500
+    );
+  }
+}
+
+export async function getNewRecipes(c: Context): Promise<Response> {
+  try {
+    const limit = Math.min(parseInt(c.req.query('limit') || '12', 10), 50);
+    const result = await RecipeService.getNewRecipes(limit);
+    return c.json(
+      createApiResponse(
+        'success',
+        result,
+        'New recipes retrieved successfully'
+      ),
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(createApiResponse('error', null, error.message), 400);
+    }
     return c.json(
       createApiResponse('error', null, 'Internal server error'),
       500
