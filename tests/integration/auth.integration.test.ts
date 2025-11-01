@@ -83,7 +83,7 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: true,
       };
 
@@ -92,11 +92,11 @@ describe('Authentication Integration Tests', () => {
       const mockUserId = 'user_123';
 
       // Mock database responses
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(null); // No existing user
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null); // No existing user
       vi.mocked(hashPassword).mockResolvedValue(mockHashedPassword);
       vi.mocked(generateToken).mockReturnValue(mockToken);
 
-      vi.mocked(prisma.users.create).mockResolvedValue({
+      vi.mocked(prisma.user.create).mockResolvedValue({
         id: mockUserId,
         email: userData.email,
         firstName: userData.firstName,
@@ -118,7 +118,7 @@ describe('Authentication Integration Tests', () => {
         updatedAt: new Date(),
       } as any);
 
-      vi.mocked(prisma.sessions.create).mockResolvedValue({
+      vi.mocked(prisma.session.create).mockResolvedValue({
         id: 'session_123',
         userId: mockUserId,
         token: mockToken,
@@ -146,12 +146,12 @@ describe('Authentication Integration Tests', () => {
       expect(responseData.data.token).toBe(mockToken);
 
       // Verify service layer interactions
-      expect(prisma.users.findUnique).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: userData.email },
       });
       expect(hashPassword).toHaveBeenCalledWith(userData.password);
-      expect(prisma.users.create).toHaveBeenCalled();
-      expect(prisma.sessions.create).toHaveBeenCalled();
+      expect(prisma.user.create).toHaveBeenCalled();
+      expect(prisma.session.create).toHaveBeenCalled();
       expect(generateToken).toHaveBeenCalled();
     });
 
@@ -161,11 +161,11 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'existing@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: true,
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue({
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'existing_user_123',
         email: userData.email,
         emailVerified: true,
@@ -180,7 +180,7 @@ describe('Authentication Integration Tests', () => {
       expect(response.status).toBe(400);
       expect(responseData.status).toBe('error');
       expect(responseData.message).toBe('Account already exists');
-      expect(prisma.users.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should reject registration without terms acceptance', async () => {
@@ -189,7 +189,7 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'Password@123',
         agreeToTerms: false, // Not agreed
       };
 
@@ -273,11 +273,11 @@ describe('Authentication Integration Tests', () => {
       const mockToken = 'jwt_token_123';
 
       // Mock database and auth utilities
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
       vi.mocked(comparePassword).mockResolvedValue(true);
       vi.mocked(generateToken).mockReturnValue(mockToken);
-      vi.mocked(prisma.users.update).mockResolvedValue(mockUser as any);
-      vi.mocked(prisma.sessions.create).mockResolvedValue({
+      vi.mocked(prisma.user.update).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.session.create).mockResolvedValue({
         id: 'session_123',
         userId: mockUser.id,
         token: mockToken,
@@ -305,7 +305,7 @@ describe('Authentication Integration Tests', () => {
       expect(responseData.data.token).toBe(mockToken);
 
       // Verify service layer interactions
-      expect(prisma.users.findUnique).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: loginData.email },
       });
       expect(comparePassword).toHaveBeenCalledWith(
@@ -313,7 +313,7 @@ describe('Authentication Integration Tests', () => {
         mockUser.password
       );
       expect(generateToken).toHaveBeenCalled();
-      expect(prisma.sessions.create).toHaveBeenCalled();
+      expect(prisma.session.create).toHaveBeenCalled();
     });
 
     it('should reject login with incorrect password', async () => {
@@ -331,9 +331,9 @@ describe('Authentication Integration Tests', () => {
         accountLockedUntil: null,
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
       vi.mocked(comparePassword).mockResolvedValue(false); // Wrong password
-      vi.mocked(prisma.users.update).mockResolvedValue({
+      vi.mocked(prisma.user.update).mockResolvedValue({
         ...mockUser,
         failedLoginAttempts: 1,
       } as any);
@@ -347,7 +347,7 @@ describe('Authentication Integration Tests', () => {
       expect(response.status).toBe(401);
       expect(responseData.status).toBe('error');
       expect(responseData.message).toBe('Invalid email or password');
-      expect(prisma.sessions.create).not.toHaveBeenCalled();
+      expect(prisma.session.create).not.toHaveBeenCalled();
     });
 
     it('should reject login for non-existent user', async () => {
@@ -357,7 +357,7 @@ describe('Authentication Integration Tests', () => {
         password: 'password123',
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(null); // User not found
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null); // User not found
 
       // Act
       const context = createMockContext(loginData);
@@ -388,9 +388,9 @@ describe('Authentication Integration Tests', () => {
 
       const lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
       vi.mocked(comparePassword).mockResolvedValue(false);
-      vi.mocked(prisma.users.update).mockResolvedValue({
+      vi.mocked(prisma.user.update).mockResolvedValue({
         ...mockUser,
         failedLoginAttempts: 5,
         accountLockedUntil: lockUntil,
@@ -405,7 +405,7 @@ describe('Authentication Integration Tests', () => {
       expect(response.status).toBe(401);
       expect(responseData.status).toBe('error');
       expect(responseData.message).toBe('Invalid email or password');
-      expect(prisma.users.update).toHaveBeenCalledWith(
+      expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             failedLoginAttempts: 5,
@@ -430,7 +430,7 @@ describe('Authentication Integration Tests', () => {
         blockedUntil: new Date(Date.now() + 10 * 60 * 1000), // Still locked
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
 
       // Act
       const context = createMockContext(loginData);
@@ -450,7 +450,7 @@ describe('Authentication Integration Tests', () => {
       // Arrange
       const mockToken = 'jwt_token_123';
 
-      vi.mocked(prisma.sessions.deleteMany).mockResolvedValue({
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
         count: 1,
       } as any);
 
@@ -458,7 +458,7 @@ describe('Authentication Integration Tests', () => {
       await AuthService.removeSession(mockToken);
 
       // Assert
-      expect(prisma.sessions.deleteMany).toHaveBeenCalledWith({
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           token: mockToken,
         },
@@ -476,8 +476,8 @@ describe('Authentication Integration Tests', () => {
         firstName: 'John',
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
-      vi.mocked(prisma.users.update).mockResolvedValue({
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({
         ...mockUser,
         resetToken: 'reset-token-123',
         resetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
@@ -487,7 +487,7 @@ describe('Authentication Integration Tests', () => {
       await AuthService.requestPasswordReset(email);
 
       // Assert
-      expect(prisma.users.update).toHaveBeenCalledWith(
+      expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockUser.id },
           data: expect.objectContaining({
@@ -501,13 +501,13 @@ describe('Authentication Integration Tests', () => {
     it('should silently handle non-existent email in forgot password', async () => {
       // Arrange
       const email = 'nonexistent@example.com';
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
       // Act
       await AuthService.requestPasswordReset(email);
 
       // Assert - Should not reveal user doesn't exist
-      expect(prisma.users.update).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
     it('should successfully reset password with valid token', async () => {
@@ -525,9 +525,9 @@ describe('Authentication Integration Tests', () => {
         blockedUntil: new Date(Date.now() - 1000), // Was locked
       };
 
-      vi.mocked(prisma.users.findFirst).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(mockUser as any);
       vi.mocked(hashPassword).mockResolvedValue(mockHashedPassword);
-      vi.mocked(prisma.users.update).mockResolvedValue({
+      vi.mocked(prisma.user.update).mockResolvedValue({
         ...mockUser,
         password: mockHashedPassword,
         resetToken: null,
@@ -541,7 +541,7 @@ describe('Authentication Integration Tests', () => {
 
       // Assert
       expect(hashPassword).toHaveBeenCalledWith(newPassword);
-      expect(prisma.users.update).toHaveBeenCalledWith(
+      expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             password: mockHashedPassword,
@@ -559,7 +559,7 @@ describe('Authentication Integration Tests', () => {
       const resetToken = 'expired-token';
       const newPassword = 'newpassword123';
 
-      vi.mocked(prisma.users.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -573,7 +573,7 @@ describe('Authentication Integration Tests', () => {
       const resetToken = 'invalid-token';
       const newPassword = 'newpassword123';
 
-      vi.mocked(prisma.users.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -595,10 +595,10 @@ describe('Authentication Integration Tests', () => {
 
       const mockHashedPassword = 'hashed_password_xyz';
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       vi.mocked(hashPassword).mockResolvedValue(mockHashedPassword);
       vi.mocked(generateToken).mockReturnValue('token');
-      vi.mocked(prisma.users.create).mockResolvedValue({
+      vi.mocked(prisma.user.create).mockResolvedValue({
         id: 'user_123',
         password: mockHashedPassword,
         role: 'USER', // Add role
@@ -608,14 +608,14 @@ describe('Authentication Integration Tests', () => {
         lastName: userData.lastName,
         email: userData.email,
       } as any);
-      vi.mocked(prisma.sessions.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.create).mockResolvedValue({} as any);
 
       // Act
       await AuthService.register(userData);
 
       // Assert
       expect(hashPassword).toHaveBeenCalledWith('plaintext_password');
-      expect(prisma.users.create).toHaveBeenCalledWith(
+      expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             password: mockHashedPassword,
@@ -644,17 +644,17 @@ describe('Authentication Integration Tests', () => {
         role: 'USER',
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
       vi.mocked(comparePassword).mockResolvedValue(true);
       vi.mocked(generateToken).mockReturnValue('token');
-      vi.mocked(prisma.users.update).mockResolvedValue(mockUser as any);
-      vi.mocked(prisma.sessions.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.update).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.session.create).mockResolvedValue({} as any);
 
       // Act
       await AuthService.login(loginData);
 
       // Assert
-      expect(prisma.sessions.create).toHaveBeenCalledWith(
+      expect(prisma.session.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             userId: mockUser.id,
@@ -685,20 +685,20 @@ describe('Authentication Integration Tests', () => {
         role: 'USER',
       };
 
-      vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
       vi.mocked(comparePassword).mockResolvedValue(true);
       vi.mocked(generateToken).mockReturnValue('token');
-      vi.mocked(prisma.users.update).mockResolvedValue({
+      vi.mocked(prisma.user.update).mockResolvedValue({
         ...mockUser,
         failedLoginAttempts: 0,
       } as any);
-      vi.mocked(prisma.sessions.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.create).mockResolvedValue({} as any);
 
       // Act
       await AuthService.login(loginData);
 
       // Assert
-      expect(prisma.users.update).toHaveBeenCalledWith(
+      expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             failedLoginAttempts: 0,

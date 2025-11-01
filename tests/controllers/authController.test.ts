@@ -28,7 +28,7 @@ describe('AuthController', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      password: 'password123',
+      password: 'Password@123',
       agreeToTerms: true,
     };
 
