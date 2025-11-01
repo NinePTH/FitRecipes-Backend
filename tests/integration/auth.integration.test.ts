@@ -242,7 +242,7 @@ describe('Authentication Integration Tests', () => {
       // Assert
       expect(response.status).toBe(400);
       expect(responseData.status).toBe('error');
-      expect(responseData.message).toContain('at least 6 characters');
+      expect(responseData.message).toContain('at least 8 characters');
     });
   });
 

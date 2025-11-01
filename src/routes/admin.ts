@@ -16,8 +16,13 @@ adminRoutes.put('/recipes/:id/approve', recipeController.approveRecipe);
 // PUT /admin/recipes/:id/reject - Reject a recipe
 adminRoutes.put('/recipes/:id/reject', recipeController.rejectRecipe);
 
+// GET /admin/recipes/stats - Get approval statistics
+adminRoutes.get('/recipes/stats', recipeController.getApprovalStats);
+
+// GET /admin/recipes/:id - Get any recipe (admin view)
+adminRoutes.get('/recipes/:id', recipeController.getRecipeByIdAdmin);
+
 // TODO: GET /admin/users - User management (to be implemented)
 // TODO: PUT /admin/users/:id/role - Update user role (to be implemented)
-// TODO: GET /admin/stats - Platform statistics (to be implemented)
 
 export default adminRoutes;

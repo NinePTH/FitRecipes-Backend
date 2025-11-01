@@ -114,9 +114,8 @@ export const recipeSchema = z.object({
     .max(5, 'Maximum 5 meal types allowed')
     .default(['DINNER']),
   cuisineType: z.string().optional(),
-  dietaryInfo: dietaryInfoSchema.optional(),
+  dietaryInfo: dietaryInfoSchema, // REQUIRED: Must provide dietary information
   nutritionInfo: nutritionInfoSchema.optional(),
-  tags: z.array(z.string()).optional(),
   allergies: z
     .array(
       z
@@ -126,11 +125,11 @@ export const recipeSchema = z.object({
         .transform(val => val.trim().toLowerCase())
     )
     .optional(),
-  imageUrl: z
-    .string()
-    .url('Image URL must be valid')
+  imageUrls: z
+    .array(z.string().url('Each image URL must be valid'))
+    .max(3, 'Maximum 3 images allowed per recipe')
     .optional()
-    .or(z.literal('')),
+    .default([]),
 });
 
 // Recipe rejection schema
@@ -153,13 +152,18 @@ export const approveRecipeSchema = z.object({
 export const commentSchema = z.object({
   content: z
     .string()
-    .min(1, 'Comment cannot be empty')
-    .max(1000, 'Comment too long'),
+    .trim()
+    .min(1, 'Comment content is required')
+    .max(1000, 'Comment must be less than 1000 characters'),
 });
 
 // Rating validation schemas
 export const ratingSchema = z.object({
-  value: z.number().min(1).max(5, 'Rating must be between 1 and 5'),
+  rating: z
+    .number()
+    .int('Rating must be an integer')
+    .min(1, 'Rating must be between 1 and 5')
+    .max(5, 'Rating must be between 1 and 5'),
 });
 
 // Pagination validation

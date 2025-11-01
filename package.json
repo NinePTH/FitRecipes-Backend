@@ -22,7 +22,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "db:seed": "bun run scripts/create-test-users.ts",
+    "db:seed:users": "bun run scripts/create-test-users.ts",
+    "db:seed:recipes": "bun run scripts/create-test-recipes.ts",
     "docker:build": "docker build -t fitrecipes-backend .",
     "docker:run": "docker-compose up -d",
     "docker:down": "docker-compose down"
@@ -47,12 +48,14 @@
     "hono": "^4.5.11",
     "jsonwebtoken": "^9.0.2",
     "resend": "^6.1.2",
+    "sharp": "^0.34.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.5.4",
+    "@types/sharp": "^0.32.0",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
     "@vitest/coverage-v8": "^2.0.5",
