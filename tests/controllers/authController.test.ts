@@ -99,7 +99,7 @@ describe('AuthController', () => {
         {
           status: 'error',
           data: null,
-          message: 'Password must be at least 6 characters',
+          message: 'Password must be at least 8 characters',
         },
         400
       );
