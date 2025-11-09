@@ -96,6 +96,9 @@ model User {
   comments              Comment[]
   ratings               Rating[]
   sessions              Session[]
+  notifications         Notification[]
+  notificationPreference NotificationPreference?
+  fcmTokens             FcmToken[]
 
   @@map("users")
 }
@@ -201,4 +204,103 @@ model Rating {
   @@index([recipeId])
   @@index([userId])
   @@map("ratings")
+}
+
+enum NotificationType {
+  SUCCESS
+  ERROR
+  WARNING
+  INFO
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Notification {
+  id          String               @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  description String
+  priority    NotificationPriority @default(MEDIUM)
+  
+  // Related entities (optional)
+  recipeId    String?
+  commentId   String?
+  ratingId    String?
+  actorUserId String? // Who triggered the notification
+  
+  // Metadata
+  actionType  String // e.g., "recipe_approved", "new_comment"
+  actionUrl   String? // Deep link to relevant page
+  
+  // Status
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  isDeleted   Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isRead, isDeleted])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  
+  // Web notifications (in-app)
+  webRecipeApproved    Boolean @default(true)
+  webRecipeRejected    Boolean @default(true)
+  webNewComment        Boolean @default(true)
+  webHighRating        Boolean @default(false)
+  webNewSubmission     Boolean @default(true) // Admin only
+  
+  // Push notifications (browser)
+  pushEnabled          Boolean @default(false)
+  pushRecipeApproved   Boolean @default(true)
+  pushRecipeRejected   Boolean @default(true)
+  pushNewComment       Boolean @default(false)
+  pushHighRating       Boolean @default(false)
+  pushNewSubmission    Boolean @default(true) // Admin only
+  
+  // Email notifications
+  emailEnabled         Boolean @default(true)
+  emailRecipeApproved  Boolean @default(true)
+  emailRecipeRejected  Boolean @default(true)
+  emailNewComment      Boolean @default(false)
+  emailDigestFrequency String  @default("never") // never, daily, weekly
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notification_preferences")
+}
+
+model FcmToken {
+  id          String   @id @default(cuid())
+  userId      String
+  fcmToken    String   @unique
+  browser     String?
+  os          String?
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@map("fcm_tokens")
 }

@@ -1,4 +1,5 @@
 import { prisma } from '@/utils/database';
+import * as NotificationService from '@/services/notificationService';
 
 // ============================================================================
 // RATING SERVICE FUNCTIONS
@@ -15,7 +16,15 @@ export async function submitRating(
   // Check if recipe exists and is approved
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
-    select: { id: true, status: true, authorId: true },
+    select: {
+      id: true,
+      status: true,
+      authorId: true,
+      title: true,
+      author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+    },
   });
 
   if (!recipe) {
@@ -59,6 +68,19 @@ export async function submitRating(
 
   // Recalculate recipe statistics
   const stats = await recalculateRecipeRatingStats(recipeId);
+
+  // Notify recipe author if it's a 5-star rating
+  if (rating === 5) {
+    const raterName = `${upsertedRating.user.firstName} ${upsertedRating.user.lastName}`;
+    await NotificationService.notifyHighRating(
+      recipeId,
+      upsertedRating.id,
+      recipe.authorId,
+      userId,
+      raterName,
+      recipe.title
+    );
+  }
 
   return {
     rating: upsertedRating,
@@ -233,7 +255,13 @@ export async function addComment(
   // Check if recipe exists and is approved
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
-    select: { id: true, status: true, totalComments: true },
+    select: {
+      id: true,
+      status: true,
+      totalComments: true,
+      title: true,
+      authorId: true,
+    },
   });
 
   if (!recipe) {
@@ -272,6 +300,17 @@ export async function addComment(
 
     return newComment;
   });
+
+  // Notify recipe author about new comment
+  const commenterName = `${comment.user.firstName} ${comment.user.lastName}`;
+  await NotificationService.notifyNewComment(
+    recipeId,
+    comment.id,
+    recipe.authorId,
+    userId,
+    commenterName,
+    recipe.title
+  );
 
   return comment;
 }

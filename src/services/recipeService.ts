@@ -1,5 +1,6 @@
 import { prisma } from '@/utils/database';
 import { deleteRecipeImage, extractPublicIdFromUrl } from '@/utils/imageUpload';
+import * as NotificationService from '@/services/notificationService';
 
 interface RecipeInput {
   title: string;
@@ -55,6 +56,15 @@ export async function submitRecipe(authorId: string, data: RecipeInput) {
       },
     },
   });
+
+  // Notify admins about new recipe submission
+  const chefName = `${recipe.author.firstName} ${recipe.author.lastName}`;
+  await NotificationService.notifyNewRecipeSubmission(
+    recipe.id,
+    recipe.title,
+    authorId,
+    chefName
+  );
 
   return recipe;
 }
@@ -292,6 +302,11 @@ export async function approveRecipe(
 ) {
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
+    include: {
+      author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+    },
   });
 
   if (!recipe) {
@@ -321,6 +336,14 @@ export async function approveRecipe(
     },
   });
 
+  // Notify recipe author about approval
+  await NotificationService.notifyRecipeApproved(
+    recipeId,
+    recipe.authorId,
+    recipe.title,
+    adminId
+  );
+
   return updatedRecipe;
 }
 
@@ -334,6 +357,11 @@ export async function rejectRecipe(
 ) {
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
+    include: {
+      author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+    },
   });
 
   if (!recipe) {
@@ -358,6 +386,15 @@ export async function rejectRecipe(
       },
     },
   });
+
+  // Notify recipe author about rejection
+  await NotificationService.notifyRecipeRejected(
+    recipeId,
+    recipe.authorId,
+    recipe.title,
+    reason,
+    adminId
+  );
 
   return updatedRecipe;
 }
