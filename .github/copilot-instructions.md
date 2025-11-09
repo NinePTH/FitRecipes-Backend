@@ -274,7 +274,13 @@ src/
 
 ### Development Workflow
 1. **Start Development**: `bun run dev` (with hot reload)
-2. **Database Changes**: Update `prisma/schema.prisma` → `bun run db:push`
+2. **Database Changes**: Update `prisma/schema.prisma` → `bun run db:migrate -- --name descriptive_name`
+   - ⚠️ **CRITICAL**: Always use `db:migrate` (NOT `db:push`) to prevent data loss
+   - ⚠️ **NEVER use `prisma db push`** - it can cause data loss in production
+   - Migrations create version-controlled SQL files in `prisma/migrations/`
+   - Migrations MUST be committed to git (never add to .gitignore)
+   - Use `db:push` ONLY for rapid prototyping in isolated dev environment
+   - Production deployment uses `prisma migrate deploy` for safety
 3. **Testing**: `bun run test` or `bun run test:coverage`
 4. **Code Quality**: `bun run lint` and `bun run format`
 5. **Docker Testing**: `bun run docker:build && bun run docker:run`
