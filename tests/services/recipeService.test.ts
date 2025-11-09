@@ -12,7 +12,27 @@ vi.mock('@/utils/database', () => ({
       count: vi.fn(),
       update: vi.fn(),
     },
+    user: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    notification: {
+      create: vi.fn(),
+    },
+    notificationPreference: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
   },
+}));
+
+// Mock notification service
+vi.mock('@/services/notificationService', () => ({
+  notifyRecipeApproved: vi.fn(),
+  notifyRecipeRejected: vi.fn(),
+  notifyNewRecipeSubmission: vi.fn(),
+  createNotification: vi.fn(),
+  getUserPreferences: vi.fn(),
 }));
 
 describe('recipeervice', () => {
