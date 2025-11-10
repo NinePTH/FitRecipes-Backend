@@ -91,9 +91,14 @@ model User {
 
   // Relations
   recipes               Recipe[]
+  approvedRecipes       Recipe[]  @relation("ApprovedRecipes")
+  rejectedRecipes       Recipe[]  @relation("RejectedRecipes")
   comments              Comment[]
   ratings               Rating[]
   sessions              Session[]
+  notifications         Notification[]
+  notificationPreference NotificationPreference?
+  fcmTokens             FcmToken[]
 
   @@map("users")
 }
@@ -115,32 +120,48 @@ model Recipe {
   id               String          @id @default(cuid())
   title            String
   description      String
-  ingredients      String[]
+  mainIngredient   String          // Primary ingredient for filtering
+  ingredients      Json            // Array of {name, amount, unit}
   instructions     String[]
-  prepTime         Int             // in minutes
-  cookTime         Int             // in minutes
+  prepTime         Int             @default(10) // in minutes (NEW - default 10 min)
+  cookingTime      Int             // in minutes
   servings         Int
   difficulty       DifficultyLevel
-  mealType         MealType
-  dietType         DietType
-  cuisineType      CuisineType
-  mainIngredient   String
-  imageUrl         String?
+  mealType         MealType[]      @default([DINNER]) // CHANGED: Array instead of single value
+  cuisineType      String?
+  dietaryInfo      Json            // REQUIRED: {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
+  nutritionInfo    Json?           // {calories, protein, carbs, fat, fiber, sodium}
+  allergies        String[]        // NEW: Common allergens: nuts, dairy, eggs, soy, shellfish, fish, wheat, sesame, etc.
+  imageUrls        String[]        @default([]) // Multiple images (max 3)
   status           RecipeStatus    @default(PENDING)
-  rejectionReason  String?
   averageRating    Float           @default(0)
   totalRatings     Int             @default(0)
+  totalComments    Int             @default(0)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  
+  // Approval/Rejection tracking
+  approvedAt       DateTime?
+  approvedById     String?
+  rejectedAt       DateTime?
+  rejectedById     String?
+  rejectionReason  String?
+  adminNote        String?
   
   // Foreign Keys
   authorId         String
 
   // Relations
   author           User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  approvedBy       User?     @relation("ApprovedRecipes", fields: [approvedById], references: [id])
+  rejectedBy       User?     @relation("RejectedRecipes", fields: [rejectedById], references: [id])
   comments         Comment[]
   ratings          Rating[]
 
+  @@index([status])
+  @@index([mainIngredient])
+  @@index([authorId])
+  @@index([mealType])
   @@map("recipes")
 }
 
@@ -158,12 +179,15 @@ model Comment {
   user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
+  @@index([recipeId])
+  @@index([userId])
+  @@index([createdAt])
   @@map("comments")
 }
 
 model Rating {
   id        String   @id @default(cuid())
-  value     Int      @db.SmallInt // 1-5 stars
+  rating    Int      @db.SmallInt // 1-5 stars (renamed from value)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -177,5 +201,106 @@ model Rating {
 
   // Ensure one rating per user per recipe
   @@unique([userId, recipeId])
+  @@index([recipeId])
+  @@index([userId])
   @@map("ratings")
+}
+
+enum NotificationType {
+  SUCCESS
+  ERROR
+  WARNING
+  INFO
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Notification {
+  id          String               @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  description String
+  priority    NotificationPriority @default(MEDIUM)
+  
+  // Related entities (optional)
+  recipeId    String?
+  commentId   String?
+  ratingId    String?
+  actorUserId String? // Who triggered the notification
+  
+  // Metadata
+  actionType  String // e.g., "recipe_approved", "new_comment"
+  actionUrl   String? // Deep link to relevant page
+  
+  // Status
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  isDeleted   Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isRead, isDeleted])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  
+  // Web notifications (in-app)
+  webRecipeApproved    Boolean @default(true)
+  webRecipeRejected    Boolean @default(true)
+  webNewComment        Boolean @default(true)
+  webHighRating        Boolean @default(false)
+  webNewSubmission     Boolean @default(true) // Admin only
+  
+  // Push notifications (browser)
+  pushEnabled          Boolean @default(false)
+  pushRecipeApproved   Boolean @default(true)
+  pushRecipeRejected   Boolean @default(true)
+  pushNewComment       Boolean @default(false)
+  pushHighRating       Boolean @default(false)
+  pushNewSubmission    Boolean @default(true) // Admin only
+  
+  // Email notifications
+  emailEnabled         Boolean @default(true)
+  emailRecipeApproved  Boolean @default(true)
+  emailRecipeRejected  Boolean @default(true)
+  emailNewComment      Boolean @default(false)
+  emailDigestFrequency String  @default("never") // never, daily, weekly
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notification_preferences")
+}
+
+model FcmToken {
+  id          String   @id @default(cuid())
+  userId      String
+  fcmToken    String   @unique
+  browser     String?
+  os          String?
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@map("fcm_tokens")
 }

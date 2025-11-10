@@ -28,7 +28,7 @@ describe('AuthController', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      password: 'password123',
+      password: 'Password@123',
       agreeToTerms: true,
     };
 
@@ -99,7 +99,7 @@ describe('AuthController', () => {
         {
           status: 'error',
           data: null,
-          message: 'Password must be at least 6 characters',
+          message: 'Password must be at least 8 characters',
         },
         400
       );

@@ -72,6 +72,8 @@ src/
 - `GET /google` - Google OAuth initiation ✅
 - `GET /google/callback` - Google OAuth callback handler ✅
 - `POST /google/mobile` - Google OAuth for mobile apps ✅
+- `POST /terms/accept` - Accept Terms of Service (OAuth users) ✅
+- `POST /terms/decline` - Decline Terms of Service and logout (OAuth users) ✅
 
 **Implementation Details**:
 - Uses `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` from `src/utils/validation.ts`
@@ -90,34 +92,98 @@ src/
   - Sent automatically after registration
   - Resend functionality available
   - Token-based verification via GET endpoint
-  - Frontend integration guide: `docs/EMAIL_VERIFICATION_FRONTEND_INTEGRATION.md`
+  - Frontend integration guide: `docs/EMAIL_VERIFICATION_GUIDE.md`
+- **Terms of Service**: OAuth users must accept ToS after first login
+  - OAuth users created with `termsAccepted: false`
+  - POST `/terms/accept` - Marks user as accepted
+  - POST `/terms/decline` - Logs user out immediately
+  - Frontend should check `isOAuthUser && !termsAccepted` and redirect to ToS page
 - **Email Service**: Configured with Resend (development mode logs to console)
 
 ### Recipe Management (`/api/v1/recipes`)
-**Status**: Placeholder routes created, implementation needed
-- `GET /search` - Multi-ingredient search with priority matching
-- `GET /` - Browse with filtering and sorting
-- `GET /recommendations` - Personalized recommendations (trending, new, for-you)
-- `GET /:id` - Recipe details with comments and ratings
-- `POST /` - Submit recipe (Chef role + image upload to Supabase)
-- `PUT /:id` - Update recipe (Chef role, ownership validation)
-- `DELETE /:id` - Delete recipe (Chef role, ownership validation)
+**Status**: ✅ PARTIAL - Submission, approval, image upload, and deletion implemented
+- `POST /upload-image` - Upload recipe image (Chef/Admin, 50/hour rate limit) ✅ COMPLETE
+- `POST /` - Submit recipe (Chef role) ✅ COMPLETE
+- `GET /:id` - Recipe details with ratings and authorization checks ✅ COMPLETE
+- `DELETE /:id` - Delete recipe with automatic image cleanup (Chef own/Admin any) ✅ COMPLETE
+- ⏳ `GET /search` - Multi-ingredient search with priority matching (TODO)
+- ⏳ `GET /` - Browse with filtering and sorting (TODO)
+- ⏳ `GET /recommendations` - Personalized recommendations (TODO)
+- ⏳ `PUT /:id` - Update recipe (Chef role, ownership validation) (TODO)
 
-**Implementation Notes**:
-- Use `recipeSchema` from `src/utils/validation.ts`
+**Implementation Details**:
+- **Image Upload** (`POST /upload-image`):
+  - Multipart form data with `image` field
+  - File validation: JPEG, PNG, WebP, GIF only (MIME type + extension check)
+  - Size limit: 5MB maximum
+  - Dimension validation: 400x300 to 4000x3000 pixels
+  - Automatic optimization: Resizes to 1200x900 max, quality 85%
+  - Uses Sharp library for image processing
+  - Uploads to Supabase Storage in `recipes/` folder
+  - Sanitized filenames: `recipe-{timestamp}-{random}.{ext}`
+  - Rate limit: 50 uploads per hour per IP
+  - Returns: imageUrl, publicId, width, height, format, size
+  - Implemented in: `src/utils/imageUpload.ts`, `src/controllers/recipeController.ts`
+
+- **Recipe Submission** (`POST /`):
+  - Uses comprehensive `recipeSchema` from `src/utils/validation.ts` with nested validation
+  - Ingredients stored as Json array: `[{name, amount, unit}]`
+  - **Required fields**:
+    * `prepTime` - Integer (1-300 minutes), defaults to 10 if not provided
+    * `mealType` - **Array of enums** (can select multiple from: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT), defaults to ['DINNER'] if not provided, min 1, max 5
+    * `dietaryInfo` - **REQUIRED** (isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo) as Json with boolean defaults
+  - Optional `imageUrl` - URL returned from `/upload-image` endpoint
+  - Optional `nutritionInfo` (calories, protein, carbs, fat, fiber, sodium) as Json
+  - Optional `allergies` - Array of allergen strings (e.g., ["nuts", "dairy", "eggs"]), auto-normalized to lowercase
+  - Requires `chefOrAdmin` middleware - only CHEF and ADMIN roles can submit
+  - Creates recipe with `PENDING` status for admin review
+  - Returns 201 with full recipe including author information
+  
+- **Recipe Detail View** (`GET /:id`):
+  - Authorization-based visibility:
+    * `PENDING` recipes: Only author and admins can view
+    * `REJECTED` recipes: Only author can view (with rejection reason)
+    * `APPROVED` recipes: All authenticated users can view
+  - Includes author information and ratings with reviewer names
+  - Returns 403 if user lacks permission, 404 if not found
+
+- **Recipe Deletion** (`DELETE /:id`):
+  - Authorization: Chef can delete own recipes, Admin can delete any
+  - Automatic image cleanup from Supabase Storage
+  - Cascade deletion of comments and ratings
+  - Returns 403 if unauthorized, 404 if not found
+  - Implemented in: `src/services/recipeService.ts` (deleteRecipe)
+  
+- **Implemented in**:
+  - Service: `src/services/recipeService.ts` (submitRecipe, getRecipeById)
+  - Controller: `src/controllers/recipeController.ts` (submitRecipe, getRecipeById)
+  - Routes: `src/routes/recipe.ts` (POST /, GET /:id)
+  - Tests: `tests/services/recipeService.test.ts` (9 tests covering authorization logic)
+
+**Future Implementation Notes**:
 - Image uploads via `supabaseClient.uploadFile()` from `src/utils/supabase.ts`
-- Apply `chefOrAdmin` middleware for submission endpoints
 - Implement caching for trending/popular recipes
 - Ensure search responds within 3 seconds for up to 10 ingredients
 
 ### Admin Management (`/api/v1/admin`)
-**Status**: Placeholder routes created, protected with `adminOnly` middleware
-- `GET /recipes/pending` - Pending recipes with pagination
-- `POST /recipes/:id/approve` - Approve recipe, update status to APPROVED
-- `POST /recipes/:id/reject` - Reject recipe with reason, update status to REJECTED
-- `GET /users` - User management with filtering
-- `PUT /users/:id/role` - Update user role (USER/CHEF/ADMIN)
-- `GET /stats` - Platform statistics and analytics
+**Status**: ✅ PARTIAL - Recipe approval system implemented
+- `GET /recipes/pending` - Pending recipes with pagination ✅ COMPLETE
+- `PUT /recipes/:id/approve` - Approve recipe, update status to APPROVED ✅ COMPLETE
+- `PUT /recipes/:id/reject` - Reject recipe with reason, update status to REJECTED ✅ COMPLETE
+- ⏳ `GET /users` - User management with filtering (TODO)
+- ⏳ `PUT /users/:id/role` - Update user role (USER/CHEF/ADMIN) (TODO)
+- ⏳ `GET /stats` - Platform statistics and analytics (TODO)
+
+**Implementation Details**:
+- **Recipe Approval Workflow**:
+  - Service: `src/services/recipeService.ts` (getPendingRecipes, approveRecipe, rejectRecipe)
+  - Controller: `src/controllers/recipeController.ts` (getPendingRecipes, approveRecipe, rejectRecipe)
+  - Routes: `src/routes/admin.ts` (GET /recipes/pending, PUT /recipes/:id/approve, PUT /recipes/:id/reject)
+  - All routes protected with `authMiddleware` + `adminOnly` middleware
+  - Pending recipes returned with pagination (page, limit, sortBy, sortOrder)
+  - Approval stores adminId, timestamp, and optional adminNote
+  - Rejection stores adminId, timestamp, and required rejectionReason (10-500 chars)
+  - Tests: `tests/services/recipeService.test.ts` (covering approval/rejection logic)
 
 ### Community Features (`/api/v1/community`)
 **Status**: Placeholder routes created, implementation needed
@@ -150,6 +216,11 @@ src/
 **Status**: Complete schema implemented in `prisma/schema.prisma`
 - **User Model**: Includes role-based permissions, email verification, failed login tracking
 - **Recipe Model**: Comprehensive fields with status management (PENDING/APPROVED/REJECTED)
+  - `prepTime` - Integer (1-300 minutes, default 10)
+  - `mealType` - **MealType[] array** (can select multiple: BREAKFAST, LUNCH, DINNER, SNACK, DESSERT, default [DINNER]) with index
+  - `dietaryInfo` - **REQUIRED** Json {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo}
+  - `nutritionInfo` - Json {calories, protein, carbs, fat, fiber, sodium}
+  - `allergies` - String[] array of allergen names (e.g., ["nuts", "dairy", "eggs"])
 - **Comment & Rating Models**: Full community engagement support
 - **Session Model**: Secure session management with expiration
 
@@ -175,6 +246,11 @@ src/
 
 **Validation** (`src/utils/validation.ts`):
 - Zod schemas for all endpoints: `registerSchema`, `loginSchema`, `recipeSchema`, `forgotPasswordSchema`, `resetPasswordSchema`, etc.
+- **Recipe Validation**:
+  - `ingredientSchema` - {name, amount, unit} validation
+  - `dietaryInfoSchema` - **REQUIRED** {isVegetarian, isVegan, isGlutenFree, isDairyFree, isKeto, isPaleo} with boolean defaults
+  - `nutritionInfoSchema` - {calories, protein, carbs, fat, fiber, sodium} with min value validation
+  - `recipeSchema` - Complete recipe validation with nested schemas and defaults (prepTime: 10, mealType: ['DINNER'], dietaryInfo required)
 
 **Email Service** (`src/utils/email.ts`):
 - `sendEmail(to, subject, content)` - Email delivery via Resend/Nodemailer
@@ -198,7 +274,13 @@ src/
 
 ### Development Workflow
 1. **Start Development**: `bun run dev` (with hot reload)
-2. **Database Changes**: Update `prisma/schema.prisma` → `bun run db:push`
+2. **Database Changes**: Update `prisma/schema.prisma` → `bun run db:migrate -- --name descriptive_name`
+   - ⚠️ **CRITICAL**: Always use `db:migrate` (NOT `db:push`) to prevent data loss
+   - ⚠️ **NEVER use `prisma db push`** - it can cause data loss in production
+   - Migrations create version-controlled SQL files in `prisma/migrations/`
+   - Migrations MUST be committed to git (never add to .gitignore)
+   - Use `db:push` ONLY for rapid prototyping in isolated dev environment
+   - Production deployment uses `prisma migrate deploy` for safety
 3. **Testing**: `bun run test` or `bun run test:coverage`
 4. **Code Quality**: `bun run lint` and `bun run format`
 5. **Docker Testing**: `bun run docker:build && bun run docker:run`
@@ -218,8 +300,8 @@ src/
 - ✅ **Password Security**: bcrypt with configurable rounds
 - ✅ **Session Management**: Database-stored sessions with expiration
 - ✅ **CORS**: Configurable allowed origins
-- ⚠️ **Input Sanitization**: Implement in controllers (TODO)
-- ⚠️ **SQL Injection Prevention**: Use Prisma ORM (inherent protection)
+- ✅ **SQL Injection Prevention**: Prisma ORM (inherent protection)
+- ⚠️ **Input Sanitization**: Additional sanitization in controllers (TODO)
 
 ### CI/CD Pipeline Status
 **Configured** (`.github/workflows/ci-cd.yml`):
@@ -240,12 +322,14 @@ src/
 1. ~~**Password Reset System**~~ ✅ COMPLETE
 2. ~~**Google OAuth Integration**~~ ✅ COMPLETE  
 3. ~~**Email Verification System**~~ ✅ COMPLETE
-4. **Recipe Search** - High-performance multi-ingredient search
-5. **File Upload Handler** - Image processing and Supabase integration
-6. **Recipe Approval Workflow** - Admin management system
-7. **Community Features** - Comments and ratings system
-8. **Performance Optimization** - Caching and database indexing
-9. **Monitoring & Logging** - Enhanced observability
+4. ~~**Recipe Submission & Detail View**~~ ✅ COMPLETE
+5. ~~**Recipe Approval Workflow**~~ ✅ COMPLETE
+6. **Recipe Search** - High-performance multi-ingredient search
+7. **Recipe Browse** - Filtering, sorting, and pagination
+8. **File Upload Handler** - Image processing and Supabase integration
+9. **Community Features** - Comments and ratings system
+10. **Performance Optimization** - Caching and database indexing
+11. **Monitoring & Logging** - Enhanced observability
 
 ## 🔐 Security Features Implemented
 
@@ -282,7 +366,7 @@ src/
 
 **Email Templates Available**:
 - Password reset email with secure token link ✅
-- Email verification (template ready, endpoint TODO)
+- Email verification email with secure token link ✅
 - Welcome email (optional, TODO)
 
 **Configuration**:
@@ -303,22 +387,34 @@ EMAIL_FROM=noreply@yourdomain.com
 
 ## 🧪 Testing Coverage
 
-**Current Status**: 35 tests passing with high coverage
+**Current Status**: 59 tests passing with comprehensive coverage
 
 **Test Structure**:
 ```
 tests/
 ├── services/
-│   └── authService.test.ts      ✅ 14 tests (registration, login, OAuth, password reset)
+│   ├── authService.test.ts      ✅ 10 tests (registration, login, OAuth, password reset)
+│   └── recipeService.test.ts    ✅ 9 tests (submit, getById, approve, reject, pagination)
 ├── controllers/
-│   └── authController.test.ts   ✅ 21 tests (all endpoints, error handling)
-└── integration/                 (TODO - E2E tests)
+│   └── authController.test.ts   ✅ 14 tests (all endpoints, error handling)
+├── utils/
+│   └── helpers.test.ts          ✅ 7 tests (API response formatting, pagination)
+└── integration/
+    └── auth.integration.test.ts ✅ 19 tests (complete auth integration flows)
 ```
+
+**Integration Test Coverage** (auth.integration.test.ts):
+- **Complete Registration Flow** (5 tests): Success case, duplicate email, terms validation, email validation, password length
+- **Complete Login Flow** (5 tests): Success case, wrong password, non-existent user, account locking, locked account rejection
+- **Logout Flow** (1 test): Session deletion
+- **Password Reset Flow** (5 tests): Token generation, silent non-existent email, valid reset, expired token, invalid token
+- **Security Features** (3 tests): Password hashing, session expiration, failed attempt reset
 
 **Testing Stack**:
 - Framework: Vitest with coverage reporting
 - Mocking: `vi.mock()` for Prisma and external services
-- Coverage: High coverage on auth features
+- Integration: Tests verify controller → service → database layer interactions
+- Coverage: High coverage on auth and recipe features
 - CI/CD: Tests run automatically on all PRs
 
 **Run Tests**:
@@ -512,15 +608,57 @@ prisma:warn Prisma failed to detect the libssl/openssl version
 **Solution**: Never add `prisma/migrations/` to .gitignore - migrations MUST be version controlled  
 **Details**: See `docs/MIGRATIONS_MUST_BE_IN_GIT.md`
 
-## 📚 Additional Documentation
+## 📚 Documentation Structure
 
-Comprehensive guides available in `docs/`:
-- `DEPLOYMENT_URLS.md` - Quick reference for all deployment environments and URLs
-- `PRODUCTION_DEPLOYMENT_CHECKLIST.md` - Complete production deployment checklist
-- `STAGING_SETUP.md` - Complete staging environment setup guide
-- `STAGING_QUICKSTART.md` - Quick reference for staging deployment
-- `DATABASE_SYNC_FIX.md` - Database schema synchronization explanation
-- `MIGRATIONS_GUIDE.md` - Complete Prisma migrations workflow
-- `MIGRATIONS_STATUS.md` - Current migration setup confirmation
-- `MIGRATIONS_MUST_BE_IN_GIT.md` - Critical: Why migrations must be version controlled
-- `FIX_STAGING_MIGRATION_BASELINE.md` - How to fix P3005 error on existing databases
+### Essential Guides (in `docs/`):
+- **`AUTHENTICATION_GUIDE.md`** - Complete auth implementation (email/password, OAuth, email verification, ToS)
+- **`DEPLOYMENT_GUIDE.md`** - Full deployment guide (Render, Docker, CI/CD, migrations)
+- **`EMAIL_VERIFICATION_GUIDE.md`** - Email verification setup and frontend integration
+- **`MIGRATIONS_GUIDE.md`** - Prisma migrations workflow and troubleshooting
+
+### Quick References:
+- **`DEPLOYMENT_URLS.md`** - Quick deployment URLs reference
+
+### Troubleshooting:
+- **`FIX_STAGING_MIGRATION_BASELINE.md`** - Fix P3005 database migration error
+- **`MIGRATIONS_MUST_BE_IN_GIT.md`** - Why migrations must be version controlled
+
+## 🔑 Key Implementation Notes
+
+### Authentication Response Format (ALL endpoints)
+All auth endpoints (`/register`, `/login`, `/me`, `/google/callback`) return consistent format:
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "string",
+      "email": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "role": "user|chef|admin",
+      "termsAccepted": boolean,  // ToS acceptance status
+      "isOAuthUser": boolean      // OAuth vs email/password user
+    },
+    "token": "jwt-token"
+  }
+}
+```
+
+### Terms of Service Flow (OAuth Users)
+- OAuth users created with `termsAccepted: false`
+- Must accept ToS via `/auth/terms/accept` after first login
+- Frontend should check `isOAuthUser && !termsAccepted` and redirect to ToS page
+- Declining ToS logs user out immediately
+
+### Email Verification
+- Verification email sent automatically after registration (async)
+- Users can login before verifying (verification not required)
+- Token expires after 24 hours
+- Resend endpoint available: `/auth/resend-verification`
+
+### Database Migrations - CRITICAL
+- **NEVER add `prisma/migrations/` to .gitignore** - migrations MUST be in git
+- Use `prisma migrate deploy` in production (not `prisma db push`)
+- Docker entrypoint runs migrations automatically before app starts
+- Schema changes: `bun run db:migrate -- --name description` then commit migration files

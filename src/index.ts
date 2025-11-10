@@ -11,6 +11,7 @@ import authRoutes from '@/routes/auth';
 import recipeRoutes from '@/routes/recipe';
 import adminRoutes from '@/routes/admin';
 import communityRoutes from '@/routes/community';
+import notificationRoutes from '@/routes/notification';
 
 // Middlewares
 import { errorHandler, notFoundHandler } from '@/middlewares/common';
@@ -76,6 +77,7 @@ const v1 = new Hono();
 v1.route('/auth', authRoutes);
 v1.route('/recipes', recipeRoutes);
 v1.route('/community', communityRoutes);
+v1.route('/notifications', notificationRoutes);
 
 // Protected admin routes
 v1.use('/admin/*', authMiddleware);
