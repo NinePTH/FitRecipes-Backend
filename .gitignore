@@ -48,3 +48,6 @@ coverage/
 # Testing
 test-results/
 .vitest/
+
+# fcm private key
+fitrecipes-498da-firebase-adminsdk-fbsvc-a3d05d0e64.json

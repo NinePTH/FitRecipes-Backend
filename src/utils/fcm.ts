@@ -46,7 +46,7 @@ Data: ${JSON.stringify(message.data, null, 2)}
   // Production implementation
   try {
     const admin = await import('firebase-admin');
-    
+
     // Initialize Firebase Admin SDK (only once)
     if (!admin.apps.length) {
       admin.initializeApp({
