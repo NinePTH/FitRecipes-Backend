@@ -43,8 +43,7 @@ Data: ${JSON.stringify(message.data, null, 2)}
     return;
   }
 
-  // Production implementation (uncomment when firebase-admin is installed)
-  /*
+  // Production implementation
   try {
     const admin = await import('firebase-admin');
     
@@ -79,16 +78,13 @@ Data: ${JSON.stringify(message.data, null, 2)}
       },
     });
 
+    // eslint-disable-next-line no-console
     console.log(`✅ FCM notification sent to ${token.substring(0, 20)}...`);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Failed to send FCM notification:', error);
     throw error;
   }
-  */
-
-  throw new Error(
-    'FCM not configured. Set Firebase environment variables and install firebase-admin package.'
-  );
 }
 
 /**
