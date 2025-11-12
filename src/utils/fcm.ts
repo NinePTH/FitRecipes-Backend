@@ -45,7 +45,7 @@ Data: ${JSON.stringify(message.data, null, 2)}
     // Dynamic import with CommonJS/ESM interop handling. Some bundlers/runtime
     // return the module under the `default` property when using dynamic import.
     const adminModule = await import('firebase-admin');
-    const admin: any = (adminModule && (adminModule.default ?? adminModule));
+    const admin: any = adminModule && (adminModule.default ?? adminModule);
 
     if (!admin) {
       throw new Error('Imported firebase-admin is undefined');
@@ -81,9 +81,6 @@ Data: ${JSON.stringify(message.data, null, 2)}
         },
       },
     });
-
-    // eslint-disable-next-line no-console
-    console.log(`✅ FCM notification sent to ${token.substring(0, 20)}...`);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('❌ Failed to send FCM notification:', error);

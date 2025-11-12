@@ -128,14 +128,7 @@ async function sendPushNotification(userId: string, notification: any) {
       select: { fcmToken: true, id: true },
     });
 
-    // eslint-disable-next-line no-console
-    console.log(`📱 FCM tokens found for user ${userId}: ${tokens.length}`);
-
-    if (tokens.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log('⚠️  No FCM tokens registered - skipping push notification');
-      return;
-    }
+    if (tokens.length === 0) return;
 
     // Send to all tokens
     const results = await Promise.allSettled(
@@ -145,7 +138,7 @@ async function sendPushNotification(userId: string, notification: any) {
           body: notification.description,
           data: {
             notificationId: notification.id,
-            type: notification.actionType,
+            type: notification.type,
             recipeId: notification.recipeId,
             actionUrl: notification.actionUrl,
             priority: notification.priority,
