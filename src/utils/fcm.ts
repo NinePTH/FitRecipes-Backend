@@ -24,7 +24,11 @@ export async function sendFcmNotification(
   message: FcmMessage
 ): Promise<void> {
   // Development mode: Log notification instead of sending
-  if (!process.env.FIREBASE_PROJECT_ID) {
+  const allowFcmInDev = false;
+  if (
+    !process.env.FIREBASE_PROJECT_ID ||
+    (process.env.NODE_ENV === 'development' && !allowFcmInDev)
+  ) {
     // eslint-disable-next-line no-console
     console.log(`
 🔔 FCM Notification (Development Mode)
