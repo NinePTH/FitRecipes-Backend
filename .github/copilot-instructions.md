@@ -20,6 +20,13 @@ src/
 
 ## General Instructions
 
+### ⚠️ Git Workflow - CRITICAL
+- **NEVER automatically commit or push code changes**
+- Only commit when explicitly requested by the user
+- Only push to remote when explicitly requested by the user
+- User controls all Git operations (commit messages, timing, branch management)
+- Exception: You may suggest commit commands for the user to run manually
+
 ### Runtime & Framework
 - **Runtime**: Bun (not Node.js) for better performance
 - **Framework**: Hono.js with TypeScript for REST APIs
