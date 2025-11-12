@@ -298,7 +298,7 @@ export async function notifyRecipeApproved(
     recipeId,
     actorUserId: adminId,
     actionType: 'recipe_approved',
-    actionUrl: `/recipes/${recipeId}`,
+    actionUrl: `/recipe/${recipeId}`,
   });
 }
 
@@ -349,7 +349,7 @@ export async function notifyNewComment(
     commentId,
     actorUserId: commenterId,
     actionType: 'new_comment',
-    actionUrl: `/recipes/${recipeId}#comment-${commentId}`,
+    actionUrl: `/recipe/${recipeId}#comment-${commentId}`,
   });
 }
 
@@ -377,7 +377,7 @@ export async function notifyHighRating(
     ratingId,
     actorUserId: raterId,
     actionType: 'high_rating',
-    actionUrl: `/recipes/${recipeId}`,
+    actionUrl: `/recipe/${recipeId}`,
   });
 }
 
@@ -408,7 +408,7 @@ export async function notifyNewRecipeSubmission(
         recipeId,
         actorUserId: chefId,
         actionType: 'new_submission',
-        actionUrl: `/admin/recipes/pending`,
+        actionUrl: `/admin`,
       })
     )
   );
