@@ -128,7 +128,14 @@ async function sendPushNotification(userId: string, notification: any) {
       select: { fcmToken: true, id: true },
     });
 
-    if (tokens.length === 0) return;
+    // eslint-disable-next-line no-console
+    console.log(`📱 FCM tokens found for user ${userId}: ${tokens.length}`);
+
+    if (tokens.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log('⚠️  No FCM tokens registered - skipping push notification');
+      return;
+    }
 
     // Send to all tokens
     const results = await Promise.allSettled(
@@ -164,6 +171,7 @@ async function sendPushNotification(userId: string, notification: any) {
       });
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Failed to send push notification:', error);
   }
 }
@@ -272,6 +280,7 @@ async function sendEmailNotification(
         break;
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Failed to send email notification:', error);
   }
 }
