@@ -60,13 +60,13 @@ export async function getSavedRecipes(
   sortBy = 'savedAt',
   sortOrder: 'asc' | 'desc' = 'desc'
 ) {
-  const { skip, take } = createPaginationParams(page, limit);
+  const { offset, limit: validLimit } = createPaginationParams(page, limit);
 
   const [savedRecipes, total] = await Promise.all([
     prisma.savedRecipe.findMany({
       where: { userId },
-      skip,
-      take,
+      skip: offset,
+      take: validLimit,
       orderBy: { [sortBy]: sortOrder },
       include: {
         recipe: {
