@@ -12,6 +12,8 @@ import recipeRoutes from '@/routes/recipe';
 import adminRoutes from '@/routes/admin';
 import communityRoutes from '@/routes/community';
 import notificationRoutes from '@/routes/notification';
+import savedRecipeRoutes from '@/routes/savedRecipe';
+import userRoutes from '@/routes/user';
 
 // Middlewares
 import { errorHandler, notFoundHandler } from '@/middlewares/common';
@@ -76,6 +78,8 @@ const v1 = new Hono();
 // Mount routes
 v1.route('/auth', authRoutes);
 v1.route('/recipes', recipeRoutes);
+v1.route('/recipes', savedRecipeRoutes);
+v1.route('/users', userRoutes);
 v1.route('/community', communityRoutes);
 v1.route('/notifications', notificationRoutes);
 
