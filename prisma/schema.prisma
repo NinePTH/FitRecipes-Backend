@@ -86,6 +86,15 @@ model User {
   googleId              String?   @unique
   oauthProvider         String?   // 'google', etc.
   
+  // Ban fields
+  isBanned              Boolean   @default(false)
+  bannedAt              DateTime?
+  bannedBy              String?   // Admin user ID who banned
+  banReason             String?
+  
+  // Activity tracking
+  lastLoginAt           DateTime?
+  
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -100,6 +109,8 @@ model User {
   notificationPreference NotificationPreference?
   fcmTokens             FcmToken[]
   savedRecipes          SavedRecipe[]
+  auditLogs             AuditLog[] @relation("AuditLogs")
+  recipeViews           RecipeView[] @relation("UserRecipeViews")
 
   @@map("users")
 }
@@ -159,6 +170,7 @@ model Recipe {
   comments         Comment[]
   ratings          Rating[]
   savedByUsers     SavedRecipe[]
+  views            RecipeView[] @relation("RecipeViews")
 
   @@index([status])
   @@index([mainIngredient])
@@ -324,4 +336,42 @@ model SavedRecipe {
   @@index([userId, savedAt(sort: Desc)])
   @@index([recipeId])
   @@map("saved_recipes")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // 'user_banned', 'user_unbanned', 'role_changed', 'recipe_deleted', 'comments_deleted'
+  adminId     String
+  targetType  String   // 'user', 'recipe', 'comment'
+  targetId    String
+  targetName  String?
+  reason      String?
+  details     Json?    // Action-specific details
+  ipAddress   String?
+  timestamp   DateTime @default(now())
+  
+  // Relations
+  admin User @relation("AuditLogs", fields: [adminId], references: [id], onDelete: SetNull)
+  
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model RecipeView {
+  id         String   @id @default(cuid())
+  recipeId   String
+  userId     String?  // NULL for anonymous views
+  ipAddress  String?
+  viewedAt   DateTime @default(now())
+  
+  // Relations
+  recipe Recipe @relation("RecipeViews", fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User?  @relation("UserRecipeViews", fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([recipeId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("recipe_views")
 }

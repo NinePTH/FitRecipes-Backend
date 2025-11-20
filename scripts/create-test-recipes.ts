@@ -370,9 +370,16 @@ async function createTestRecipes() {
       console.log(`  ✅ Created: ${recipe.title}`);
     }
 
-    // Create 2 APPROVED recipes
+    // Create 2 APPROVED recipes with real ratings
     if (adminUser) {
-      console.log('\n✅ Creating 2 APPROVED recipes...');
+      console.log('\n✅ Creating 2 APPROVED recipes with ratings...');
+
+      // Get some users to create ratings from
+      const ratingUsers = await prisma.user.findMany({
+        take: 3,
+        orderBy: { createdAt: 'asc' },
+      });
+
       for (let i = 10; i < 12; i++) {
         const template = recipeTemplates[i % recipeTemplates.length];
         const recipe = await prisma.recipe.create({
@@ -403,11 +410,36 @@ async function createTestRecipes() {
             approvedAt: new Date(),
             approvedById: adminUser.id,
             adminNote: 'Great recipe! Approved for publication.',
-            averageRating: 4.5,
-            totalRatings: 3,
           },
         });
         console.log(`  ✅ Created: ${recipe.title}`);
+
+        // Create 3 real ratings for this recipe
+        if (ratingUsers.length >= 3) {
+          const ratings = [5, 4, 5]; // Average will be 4.67
+          for (let j = 0; j < 3; j++) {
+            await prisma.rating.create({
+              data: {
+                rating: ratings[j],
+                recipeId: recipe.id,
+                userId: ratingUsers[j].id,
+              },
+            });
+          }
+
+          // Update recipe with calculated average
+          await prisma.recipe.update({
+            where: { id: recipe.id },
+            data: {
+              averageRating:
+                ratings.reduce((a, b) => a + b, 0) / ratings.length,
+              totalRatings: ratings.length,
+            },
+          });
+          console.log(
+            `     📊 Added ${ratings.length} ratings (avg: ${(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)})`
+          );
+        }
       }
     }
 
@@ -458,13 +490,14 @@ async function createTestRecipes() {
     console.log('📊 Summary:');
     console.log(`   - 10 PENDING recipes`);
     console.log(
-      `   - 2 APPROVED recipes ${adminUser ? '✅' : '(skipped - no admin)'}`
+      `   - 2 APPROVED recipes with real ratings ${adminUser ? '✅' : '(skipped - no admin)'}`
     );
     console.log(
       `   - 2 REJECTED recipes ${adminUser ? '✅' : '(skipped - no admin)'}`
     );
     console.log(`   - Total: 14 recipes\n`);
-    console.log(`🔗 All recipes belong to user: ${user.email} (${USER_ID})\n`);
+    console.log(`🔗 All recipes belong to user: ${user.email} (${USER_ID})`);
+    console.log(`📊 Approved recipes have 3 real Rating records each\n`);
   } catch (error) {
     console.error('❌ Error creating test recipes:', error);
   } finally {

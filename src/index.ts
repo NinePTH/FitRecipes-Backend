@@ -10,6 +10,7 @@ import config from '@/config';
 import authRoutes from '@/routes/auth';
 import recipeRoutes from '@/routes/recipe';
 import adminRoutes from '@/routes/admin';
+import chefRoutes from '@/routes/chef';
 import communityRoutes from '@/routes/community';
 import notificationRoutes from '@/routes/notification';
 import savedRecipeRoutes from '@/routes/savedRecipe';
@@ -82,6 +83,9 @@ v1.route('/recipes', savedRecipeRoutes);
 v1.route('/users', userRoutes);
 v1.route('/community', communityRoutes);
 v1.route('/notifications', notificationRoutes);
+
+// Protected chef routes (CHEF or ADMIN role required)
+v1.route('/chef', chefRoutes);
 
 // Protected admin routes
 v1.use('/admin/*', authMiddleware);
