@@ -23,6 +23,10 @@ export async function sendFcmNotification(
   token: string,
   message: FcmMessage
 ): Promise<void> {
+  // Check NODE_ENV
+  // eslint-disable-next-line no-console
+  console.log(`🔍 FCM Check - NODE_ENV: "${process.env.NODE_ENV}"`);
+
   // Development mode: Only log notifications if explicitly in development
   if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
@@ -37,6 +41,9 @@ Data: ${JSON.stringify(message.data, null, 2)}
     `);
     return;
   }
+
+  // eslint-disable-next-line no-console
+  console.log(`🚀 FCM Check - Attempting to send real FCM notification...`);
 
   // Production implementation
   try {
