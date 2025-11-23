@@ -35,10 +35,41 @@ export async function sendFcmNotification(
 
     // Initialize Firebase Admin SDK (only once)
     if (!Array.isArray(admin.apps) || admin.apps.length === 0) {
+      // Handle private key - it might be stored with escaped newlines or actual newlines
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+      
+      // Debug: Log key format (only first/last 50 chars for security)
+      // eslint-disable-next-line no-console
+      console.log('🔍 Firebase Private Key Check:', {
+        hasKey: !!privateKey,
+        length: privateKey.length,
+        hasActualNewlines: privateKey.includes('\n'),
+        hasEscapedNewlines: privateKey.includes('\\n'),
+        startsCorrectly: privateKey.startsWith('-----BEGIN'),
+        preview: privateKey
+          ? `${privateKey.substring(0, 50)}...${privateKey.substring(privateKey.length - 50)}`
+          : 'missing',
+      });
+
+      // If the key doesn't contain actual newlines, try to unescape them
+      if (privateKey && !privateKey.includes('\n')) {
+        privateKey = privateKey.replace(/\\n/g, '\n');
+        // eslint-disable-next-line no-console
+        console.log('✅ Converted escaped newlines to actual newlines');
+      }
+
+      // Validate that we have the key in correct format
+      if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+        throw new Error(
+          'FIREBASE_PRIVATE_KEY is not in correct format. ' +
+            'It should start with -----BEGIN PRIVATE KEY-----'
+        );
+      }
+
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+          privateKey,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         }),
       });
