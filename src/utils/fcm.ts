@@ -37,7 +37,7 @@ export async function sendFcmNotification(
     if (!Array.isArray(admin.apps) || admin.apps.length === 0) {
       // Handle private key - it might be stored with escaped newlines or actual newlines
       let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
-      
+
       // Debug: Log key format (only first/last 50 chars for security)
       // eslint-disable-next-line no-console
       console.log('🔍 Firebase Private Key Check:', {
