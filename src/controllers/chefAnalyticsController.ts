@@ -158,7 +158,7 @@ export const getRecipeAnalytics = async (c: Context) => {
 export const trackRecipeView = async (c: Context) => {
   try {
     const user = c.get('user') as AuthenticatedUser | undefined;
-    const recipeId = c.req.param('recipeId');
+    const recipeId = c.req.param('id'); // Fixed: route uses :id not :recipeId
     const ipAddress =
       c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
 
