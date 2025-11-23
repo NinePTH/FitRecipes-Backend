@@ -23,12 +23,8 @@ export async function sendFcmNotification(
   token: string,
   message: FcmMessage
 ): Promise<void> {
-  // Development mode: Log notification instead of sending
-  const allowFcmInDev = false;
-  if (
-    !process.env.FIREBASE_PROJECT_ID ||
-    (process.env.NODE_ENV === 'development' && !allowFcmInDev)
-  ) {
+  // Development mode: Only log notifications if explicitly in development
+  if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
     console.log(`
 🔔 FCM Notification (Development Mode)
@@ -37,8 +33,6 @@ Token: ${token.substring(0, 20)}...
 Title: ${message.title}
 Body: ${message.body}
 Data: ${JSON.stringify(message.data, null, 2)}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 Set FIREBASE_PROJECT_ID and other Firebase env vars to enable real FCM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
     return;
