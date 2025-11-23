@@ -23,29 +23,6 @@ export async function sendFcmNotification(
   token: string,
   message: FcmMessage
 ): Promise<void> {
-  // Check NODE_ENV
-  // eslint-disable-next-line no-console
-  console.log(`🔍 FCM Check - NODE_ENV: "${process.env.NODE_ENV}"`);
-
-  // Development mode: Only log notifications if explicitly in development
-  if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-    console.log(`
-🔔 FCM Notification (Development Mode)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Token: ${token.substring(0, 20)}...
-Title: ${message.title}
-Body: ${message.body}
-Data: ${JSON.stringify(message.data, null, 2)}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `);
-    return;
-  }
-
-  // eslint-disable-next-line no-console
-  console.log(`🚀 FCM Check - Attempting to send real FCM notification...`);
-
-  // Production implementation
   try {
     // Dynamic import with CommonJS/ESM interop handling. Some bundlers/runtime
     // return the module under the `default` property when using dynamic import.
@@ -68,7 +45,7 @@ Data: ${JSON.stringify(message.data, null, 2)}
     }
 
     // Send FCM message
-    await admin.messaging().send({
+    const response = await admin.messaging().send({
       token,
       notification: {
         title: message.title,
@@ -86,6 +63,11 @@ Data: ${JSON.stringify(message.data, null, 2)}
         },
       },
     });
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `✅ FCM notification sent successfully. Message ID: ${response}`
+    );
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('❌ Failed to send FCM notification:', error);

@@ -475,15 +475,24 @@ export async function trackRecipeView(
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  // Build the where clause properly:
+  // - For logged-in users: Check by userId OR ipAddress (in case they viewed while logged out)
+  // - For anonymous users: Check by ipAddress only
+  const whereClause = userId
+    ? {
+        recipeId,
+        OR: [{ userId }, { ipAddress, userId: null }],
+        viewedAt: { gte: today, lt: tomorrow },
+      }
+    : {
+        recipeId,
+        ipAddress,
+        userId: null, // Only match anonymous views
+        viewedAt: { gte: today, lt: tomorrow },
+      };
+
   const existingView = await prisma.recipeView.findFirst({
-    where: {
-      recipeId,
-      ...(userId ? { userId } : { ipAddress }),
-      viewedAt: {
-        gte: today,
-        lt: tomorrow,
-      },
-    },
+    where: whereClause,
   });
 
   // Don't create duplicate view for same user/IP on same day
