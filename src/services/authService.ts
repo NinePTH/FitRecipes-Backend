@@ -173,7 +173,9 @@ export async function login(data: LoginData): Promise<AuthResponse> {
 
   // Check if user is banned
   if (user.isBanned) {
-    throw new Error('This account has been banned. Contact support for assistance.');
+    throw new Error(
+      'This account has been banned. Contact support for assistance.'
+    );
   }
 
   // Check if account is blocked
@@ -384,7 +386,9 @@ export async function createOrUpdateOAuthUser(googleUser: {
   if (user) {
     // Check if user is banned
     if (user.isBanned) {
-      throw new Error('This account has been banned. Contact support for assistance.');
+      throw new Error(
+        'This account has been banned. Contact support for assistance.'
+      );
     }
 
     // Update existing OAuth user
@@ -406,7 +410,9 @@ export async function createOrUpdateOAuthUser(googleUser: {
     if (existingUser) {
       // Check if existing user is banned
       if (existingUser.isBanned) {
-        throw new Error('This account has been banned. Contact support for assistance.');
+        throw new Error(
+          'This account has been banned. Contact support for assistance.'
+        );
       }
 
       // Link existing email account with Google

@@ -101,11 +101,11 @@ export async function login(c: Context): Promise<Response> {
         );
       }
 
-      if (error.message === 'This account has been banned. Contact support for assistance.') {
-        return c.json(
-          createApiResponse('error', null, error.message),
-          403
-        );
+      if (
+        error.message ===
+        'This account has been banned. Contact support for assistance.'
+      ) {
+        return c.json(createApiResponse('error', null, error.message), 403);
       }
 
       if (

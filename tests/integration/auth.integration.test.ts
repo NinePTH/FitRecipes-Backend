@@ -476,7 +476,9 @@ describe('Authentication Integration Tests', () => {
       // Assert
       expect(response.status).toBe(403);
       expect(responseData.status).toBe('error');
-      expect(responseData.message).toBe('This account has been banned. Contact support for assistance.');
+      expect(responseData.message).toBe(
+        'This account has been banned. Contact support for assistance.'
+      );
       expect(comparePassword).not.toHaveBeenCalled();
       expect(prisma.session.create).not.toHaveBeenCalled();
     });
