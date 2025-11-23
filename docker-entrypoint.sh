@@ -22,5 +22,5 @@ fi
 
 echo "🚀 Starting FitRecipes Backend..."
 
-# Start the application
-exec bun run dist/index.js
+# Start the application using package.json script (ensures NODE_ENV is set)
+exec bun run start
