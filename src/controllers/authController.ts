@@ -102,6 +102,13 @@ export async function login(c: Context): Promise<Response> {
       }
 
       if (
+        error.message ===
+        'This account has been banned. Contact support for assistance.'
+      ) {
+        return c.json(createApiResponse('error', null, error.message), 403);
+      }
+
+      if (
         error.message.includes('OAuth login') ||
         error.message.includes('linked to Google') ||
         error.message.includes('Sign in with Google')
@@ -363,13 +370,20 @@ export async function googleCallback(c: Context): Promise<Response> {
 
       return c.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
     } catch (oauthError) {
-      if (
-        oauthError instanceof Error &&
-        oauthError.message.includes('not yet implemented')
-      ) {
-        return c.redirect(
-          `${frontendUrl}/auth?error=oauth_not_implemented&message=${encodeURIComponent('OAuth user creation not yet implemented')}`
-        );
+      if (oauthError instanceof Error) {
+        // Handle banned user
+        if (oauthError.message.includes('banned')) {
+          return c.redirect(
+            `${frontendUrl}/auth?error=account_banned&message=${encodeURIComponent('This account has been banned. Contact support for assistance.')}`
+          );
+        }
+
+        // Handle OAuth not implemented
+        if (oauthError.message.includes('not yet implemented')) {
+          return c.redirect(
+            `${frontendUrl}/auth?error=oauth_not_implemented&message=${encodeURIComponent('OAuth user creation not yet implemented')}`
+          );
+        }
       }
       throw oauthError;
     }

@@ -808,6 +808,7 @@ export async function getRecommendedRecipes(
 
 /**
  * Get trending recipes (high engagement in last 7-30 days)
+ * Includes recent ratings, comments, and saves
  */
 export async function getTrendingRecipes(
   limit: number = 12,
@@ -817,7 +818,7 @@ export async function getTrendingRecipes(
   const dateThreshold = new Date();
   dateThreshold.setDate(dateThreshold.getDate() - daysAgo);
 
-  // Get recipes with recent ratings or comments
+  // Get recipes with recent ratings, comments, or saves
   const recipes = await prisma.recipe.findMany({
     where: {
       status: 'APPROVED',
@@ -836,6 +837,13 @@ export async function getTrendingRecipes(
             },
           },
         },
+        {
+          savedByUsers: {
+            some: {
+              savedAt: { gte: dateThreshold },
+            },
+          },
+        },
       ],
     },
     include: {
@@ -847,16 +855,48 @@ export async function getTrendingRecipes(
           email: true,
         },
       },
+      _count: {
+        select: {
+          ratings: {
+            where: {
+              createdAt: { gte: dateThreshold },
+            },
+          },
+          comments: {
+            where: {
+              createdAt: { gte: dateThreshold },
+            },
+          },
+          savedByUsers: {
+            where: {
+              savedAt: { gte: dateThreshold },
+            },
+          },
+        },
+      },
     },
-    orderBy: [{ averageRating: 'desc' }, { totalComments: 'desc' }],
-    take: limit,
   });
 
+  // Calculate trending score and sort by activity: recent ratings + comments + saves
+  const recipesWithScore = recipes.map(recipe => {
+    const score =
+      (recipe._count.ratings || 0) +
+      (recipe._count.comments || 0) +
+      (recipe._count.savedByUsers || 0);
+    return { recipe, score };
+  });
+
+  // Sort by score and return top recipes
+  const sortedRecipes = recipesWithScore
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(item => item.recipe);
+
   return {
-    recipes,
+    recipes: sortedRecipes,
     meta: {
       period,
-      total: recipes.length,
+      total: sortedRecipes.length,
     },
   };
 }

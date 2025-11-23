@@ -171,6 +171,13 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     throw new Error('Invalid email or password');
   }
 
+  // Check if user is banned
+  if (user.isBanned) {
+    throw new Error(
+      'This account has been banned. Contact support for assistance.'
+    );
+  }
+
   // Check if account is blocked
   if (user.blockedUntil && user.blockedUntil > new Date()) {
     throw new Error('Account temporarily locked');
@@ -377,6 +384,13 @@ export async function createOrUpdateOAuthUser(googleUser: {
   });
 
   if (user) {
+    // Check if user is banned
+    if (user.isBanned) {
+      throw new Error(
+        'This account has been banned. Contact support for assistance.'
+      );
+    }
+
     // Update existing OAuth user
     user = await prisma.user.update({
       where: { id: user.id },
@@ -394,6 +408,13 @@ export async function createOrUpdateOAuthUser(googleUser: {
     });
 
     if (existingUser) {
+      // Check if existing user is banned
+      if (existingUser.isBanned) {
+        throw new Error(
+          'This account has been banned. Contact support for assistance.'
+        );
+      }
+
       // Link existing email account with Google
       user = await prisma.user.update({
         where: { id: existingUser.id },

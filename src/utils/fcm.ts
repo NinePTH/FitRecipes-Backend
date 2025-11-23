@@ -24,9 +24,10 @@ export async function sendFcmNotification(
   message: FcmMessage
 ): Promise<void> {
   // Development mode: Log notification instead of sending
+  const allowFcmInDev = false;
   if (
     !process.env.FIREBASE_PROJECT_ID ||
-    process.env.NODE_ENV === 'development'
+    (process.env.NODE_ENV === 'development' && !allowFcmInDev)
   ) {
     // eslint-disable-next-line no-console
     console.log(`
@@ -43,13 +44,19 @@ Data: ${JSON.stringify(message.data, null, 2)}
     return;
   }
 
-  // Production implementation (uncomment when firebase-admin is installed)
-  /*
+  // Production implementation
   try {
-    const admin = await import('firebase-admin');
-    
+    // Dynamic import with CommonJS/ESM interop handling. Some bundlers/runtime
+    // return the module under the `default` property when using dynamic import.
+    const adminModule = await import('firebase-admin');
+    const admin: any = adminModule && (adminModule.default ?? adminModule);
+
+    if (!admin) {
+      throw new Error('Imported firebase-admin is undefined');
+    }
+
     // Initialize Firebase Admin SDK (only once)
-    if (!admin.apps.length) {
+    if (!Array.isArray(admin.apps) || admin.apps.length === 0) {
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
@@ -78,17 +85,11 @@ Data: ${JSON.stringify(message.data, null, 2)}
         },
       },
     });
-
-    console.log(`✅ FCM notification sent to ${token.substring(0, 20)}...`);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Failed to send FCM notification:', error);
     throw error;
   }
-  */
-
-  throw new Error(
-    'FCM not configured. Set Firebase environment variables and install firebase-admin package.'
-  );
 }
 
 /**

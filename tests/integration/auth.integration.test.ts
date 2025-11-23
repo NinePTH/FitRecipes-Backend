@@ -443,6 +443,45 @@ describe('Authentication Integration Tests', () => {
       expect(responseData.message).toBe('Account temporarily locked');
       expect(comparePassword).not.toHaveBeenCalled();
     });
+
+    it('should reject login for banned user', async () => {
+      // Arrange
+      const loginData = {
+        email: 'banned.user@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = {
+        id: 'user_123',
+        email: loginData.email,
+        password: 'hashed_password',
+        firstName: 'Banned',
+        lastName: 'User',
+        role: 'USER',
+        isBanned: true,
+        bannedAt: new Date('2025-01-15'),
+        bannedBy: 'admin_456',
+        banReason: 'Violated community guidelines',
+        failedLoginAttempts: 0,
+        blockedUntil: null,
+      };
+
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+
+      // Act
+      const context = createMockContext(loginData);
+      const response = await AuthController.login(context);
+      const responseData = await response.json();
+
+      // Assert
+      expect(response.status).toBe(403);
+      expect(responseData.status).toBe('error');
+      expect(responseData.message).toBe(
+        'This account has been banned. Contact support for assistance.'
+      );
+      expect(comparePassword).not.toHaveBeenCalled();
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('Logout Flow', () => {

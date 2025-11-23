@@ -612,6 +612,28 @@ docker-compose up -d  # Uses your existing 3-replica setup
 
 **Architecture is ready** - Docker Compose configuration already includes load balancing and scaling for when we need it! 🎯
 
+## 📚 Documentation
+
+Comprehensive guides for all features:
+
+### Core Features
+- **[Authentication Guide](docs/AUTHENTICATION_GUIDE.md)** - Email/password, OAuth, email verification, Terms of Service
+- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Production deployment, migrations, Docker, CI/CD
+- **[Email Verification Guide](docs/EMAIL_VERIFICATION_GUIDE.md)** - Email verification setup and frontend integration
+- **[Migrations Guide](docs/MIGRATIONS_GUIDE.md)** - Database migrations best practices
+
+### API Integration Guides
+- **[Admin & Chef Dashboard API](docs/FRONTEND_ADMIN_CHEF_DASHBOARD_GUIDE.md)** - User management, analytics, view tracking
+- **[Saved Recipes API](docs/FRONTEND_SAVED_RECIPES_GUIDE.md)** - Save/unsave recipes, bulk checks
+
+### Implementation Summaries
+- **[Admin & Chef Dashboard Implementation](docs/ADMIN_CHEF_DASHBOARD_IMPLEMENTATION_SUMMARY.md)** - Phase 1 & 2 completion details
+
+### Troubleshooting
+- **[Migration Baseline Fix](docs/FIX_STAGING_MIGRATION_BASELINE.md)** - Fix P3005 database migration error
+- **[Migrations Must Be in Git](docs/MIGRATIONS_MUST_BE_IN_GIT.md)** - Why migrations must be version controlled
+- **[Deployment URLs](docs/DEPLOYMENT_URLS.md)** - Quick deployment URLs reference
+
 ## 🛡️ Security Features
 
 - **Input sanitization** for all user inputs

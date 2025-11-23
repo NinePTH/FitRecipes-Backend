@@ -206,3 +206,11 @@ export const googleUserSchema = z.object({
   family_name: z.string(),
   picture: z.string().url(),
 });
+
+// Saved recipes validation schemas
+export const bulkCheckSavedSchema = z.object({
+  recipeIds: z
+    .array(z.string().min(1, 'Recipe ID cannot be empty'))
+    .min(1, 'At least one recipe ID is required')
+    .max(100, 'Maximum 100 recipe IDs allowed'),
+});

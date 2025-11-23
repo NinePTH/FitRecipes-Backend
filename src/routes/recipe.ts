@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import * as recipeController from '@/controllers/recipeController';
+import * as chefAnalyticsController from '@/controllers/chefAnalyticsController';
 import { authMiddleware, chefOrAdmin } from '@/middlewares/auth';
 import { uploadRateLimitMiddleware } from '@/middlewares/rateLimit';
 
@@ -47,12 +48,16 @@ recipeRoutes.put(
 );
 
 // DELETE /recipes/:id - Delete recipe (CHEF can delete own, ADMIN can delete any)
+// DELETE /recipes/:id - Delete recipe (CHEF can delete own, ADMIN can delete any)
 recipeRoutes.delete(
   '/:id',
   authMiddleware,
   chefOrAdmin,
   recipeController.deleteRecipe
 );
+
+// POST /recipes/:id/view - Track recipe view (optional auth - allows anonymous)
+recipeRoutes.post('/:id/view', chefAnalyticsController.trackRecipeView);
 
 // GET /recipes - Browse recipes with filters (must be last, after specific routes)
 recipeRoutes.get('/', recipeController.browseRecipes);
