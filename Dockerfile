@@ -1,5 +1,6 @@
 # Base stage
 FROM oven/bun:1 AS base
+# Force rebuild: 2025-11-24
 
 # Install OpenSSL for Prisma
 RUN apt-get update -y && \
