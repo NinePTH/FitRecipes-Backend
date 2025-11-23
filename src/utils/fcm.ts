@@ -38,6 +38,17 @@ export async function sendFcmNotification(
       // Handle private key - it might be stored with escaped newlines or actual newlines
       let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
 
+      // Remove surrounding quotes if present (common issue when copying from JSON)
+      privateKey = privateKey.trim();
+      if (
+        (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+        (privateKey.startsWith("'") && privateKey.endsWith("'"))
+      ) {
+        privateKey = privateKey.slice(1, -1);
+        // eslint-disable-next-line no-console
+        console.log('✅ Removed surrounding quotes from private key');
+      }
+
       // Debug: Log key format (only first/last 50 chars for security)
       // eslint-disable-next-line no-console
       console.log('🔍 Firebase Private Key Check:', {
