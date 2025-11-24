@@ -133,15 +133,18 @@ export async function getAdminOverview(
             recipesWithRatings.length
           : 0;
 
+      const totalScore = avgRating * 0.7 + totalViews * 0.3;
+
       return {
         userId: chef.id,
         name: `${chef.firstName} ${chef.lastName}`,
         recipeCount: chef._count.recipes,
         averageRating: parseFloat(avgRating.toFixed(2)),
         totalViews,
+        totalScore: parseFloat(totalScore.toFixed(2)),
       };
     })
-    .sort((a, b) => b.totalViews - a.totalViews)
+    .sort((a, b) => b.totalScore - a.totalScore)
     .slice(0, 5);
 
   // Get recent activity
