@@ -13,10 +13,10 @@
 
 FitRecipes production infrastructure featuring:
 - **Frontend Hosting**: Vercel Edge Network with global CDN
-- **Backend Hosting**: Render Web Service (Docker containers)
+- **Backend Hosting**: Render Web Service (single Docker container)
 - **Database**: PostgreSQL 15 on Supabase with connection pooling
 - **File Storage**: Supabase Storage with CDN
-- **Load Balancing**: Nginx (3 backend replicas via Docker Compose)
+- **Load Balancing**: Render platform (managed automatically)
 - **CI/CD**: GitHub Actions with automated testing, security scanning, and deployment
 - **Monitoring**: Health checks, error logging, metrics collection
 - **Security**: JWT auth, rate limiting, SSL/TLS, CORS, bcrypt hashing
@@ -30,7 +30,8 @@ FitRecipes production infrastructure featuring:
 | **Backend Repository** | https://github.com/NinePTH/FitRecipes-Backend |
 | **Production Backend** | https://fitrecipes-backend.onrender.com |
 | **Staging Backend** | https://fitrecipes-backend-staging.onrender.com |
-| **Component Diagram** | `docs/COMPONENT_DIAGRAM.md` (software components) |
+| **UML Component Diagram** | `docs/UML_COMPONENT_DIAGRAM.md` (formal UML components) |
+| **Application Architecture** | `docs/APPLICATION_ARCHITECTURE.md` (code structure & layers) |
 | **API Documentation** | `docs/FRONTEND_ADMIN_CHEF_DASHBOARD_GUIDE.md` |
 | **Deployment Guide** | `docs/DEPLOYMENT_GUIDE.md` |
 
@@ -51,17 +52,9 @@ graph TB
         FRONTEND[React 19 Application<br/>Vite 6 Build<br/>Static Assets]
     end
     
-    subgraph "API Gateway"
-        NGINX[Nginx Load Balancer<br/>Round Robin<br/>Port 8080]
-    end
-    
     subgraph "Backend Hosting - Render"
-        subgraph "Docker Compose - 3 Replicas"
-            APP1[Hono.js Server 1<br/>Bun Runtime<br/>Port 3000]
-            APP2[Hono.js Server 2<br/>Bun Runtime<br/>Port 3000]
-            APP3[Hono.js Server 3<br/>Bun Runtime<br/>Port 3000]
-        end
-        
+        RENDER_LB[Render Load Balancer<br/>Managed by Platform<br/>SSL/TLS Termination]
+        APP[Hono.js Server<br/>Bun Runtime<br/>Docker Container<br/>Port 3000]
         HEALTH[Health Check<br/>/health endpoint<br/>30s intervals]
     end
     
@@ -104,53 +97,36 @@ graph TB
     %% User Flow
     USERS -->|HTTPS| VERCEL
     VERCEL --> FRONTEND
-    FRONTEND -->|REST API| NGINX
+    FRONTEND -->|REST API| RENDER_LB
     
     %% Load Balancing
-    NGINX -->|Balance| APP1
-    NGINX -->|Balance| APP2
-    NGINX -->|Balance| APP3
+    RENDER_LB -->|Route| APP
     
     %% Backend to Data
-    APP1 --> POSTGRES
-    APP2 --> POSTGRES
-    APP3 --> POSTGRES
-    
-    APP1 --> STORAGE
-    APP2 --> STORAGE
-    APP3 --> STORAGE
+    APP --> POSTGRES
+    APP --> STORAGE
     
     %% External Services
-    APP1 --> GOOGLE
-    APP1 --> RESEND
-    APP1 --> FCM
+    APP --> GOOGLE
+    APP --> RESEND
+    APP --> FCM
     
     %% Health Monitoring
-    APP1 --> HEALTH
-    APP2 --> HEALTH
-    APP3 --> HEALTH
+    APP --> HEALTH
     
     %% CI/CD Flow
     GIT -->|Push| TEST
     TEST -->|Pass| BUILD
     BUILD -->|Success| SECURITY
     SECURITY -->|Pass| DEPLOY
-    DEPLOY --> APP1
-    DEPLOY --> APP2
-    DEPLOY --> APP3
+    DEPLOY --> APP
     
     %% Monitoring
-    APP1 --> LOGS
-    APP2 --> LOGS
-    APP3 --> LOGS
-    
-    APP1 --> METRICS
-    APP2 --> METRICS
-    APP3 --> METRICS
+    APP --> LOGS
+    APP --> METRICS
 
     classDef client fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef frontend fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
-    classDef gateway fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
     classDef backend fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
     classDef external fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
@@ -159,8 +135,7 @@ graph TB
     
     class USERS client
     class VERCEL,FRONTEND frontend
-    class NGINX gateway
-    class APP1,APP2,APP3,HEALTH backend
+    class RENDER_LB,APP,HEALTH backend
     class POSTGRES,STORAGE database
     class GOOGLE,RESEND,FCM external
     class GIT,TEST,BUILD,SECURITY,DEPLOY cicd
@@ -194,9 +169,11 @@ Git Push → Vercel Webhook → Build Trigger → Vite Build → Deploy to CDN �
 
 ### 2. Backend Infrastructure (Render)
 
+#### **Current Production Deployment**
+
 | Component | Technology | Configuration |
 |-----------|-----------|---------------|
-| **Hosting Platform** | Render Web Service | Docker container |
+| **Hosting Platform** | Render Web Service | Single Docker container |
 | **Plan** | Starter Plan | 512MB RAM, 0.5 CPU |
 | **Region** | Oregon, USA | us-west-2 |
 | **Runtime** | Bun 1.x | JavaScript runtime in Docker |
@@ -205,44 +182,94 @@ Git Push → Vercel Webhook → Build Trigger → Vite Build → Deploy to CDN �
 | **Health Check** | `/health` endpoint | Every 30 seconds |
 | **Environment** | Production | `NODE_ENV=production` |
 | **Port** | 3000 | Internal container port |
+| **Load Balancing** | Render Platform | Managed automatically (SSL/TLS termination) |
 | **Restart Policy** | Automatic | On failure |
 
-**Docker Configuration** (`docker-compose.yml`):
-```yaml
-services:
-  app:
-    build: .
-    expose:
-      - "3000"
-    deploy:
-      replicas: 3      # 3 backend instances
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+**Dockerfile Structure** (Multi-stage build):
+```dockerfile
+# Stage 1: Base image with Bun and OpenSSL
+FROM oven/bun:1 AS base
+RUN apt-get update && apt-get install -y openssl
+
+# Stage 2: Install dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
+
+# Stage 3: Build application
+FROM base AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN bun run db:generate && bun run build
+
+# Stage 4: Production runtime
+FROM base AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+COPY --from=build /app/prisma ./prisma
+COPY docker-entrypoint.sh ./
+
+EXPOSE 3000
+ENTRYPOINT ["./docker-entrypoint.sh"]
 ```
 
-**Nginx Load Balancer** (`nginx.conf`):
-```nginx
-upstream backend {
-    server app:3000;  # Round-robin across 3 replicas
-}
+**Docker Entrypoint** (`docker-entrypoint.sh`):
+```bash
+#!/bin/bash
+set -e
 
-server {
-    listen 80;
-    location / {
-        proxy_pass http://backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
+echo "🚀 Starting FitRecipes Backend..."
+
+# Export NODE_ENV to ensure production mode
+export NODE_ENV=production
+echo "📦 NODE_ENV: $NODE_ENV"
+
+# Run database migrations
+echo "🔄 Running database migrations..."
+bunx prisma migrate deploy
+
+if [ $? -ne 0 ]; then
+    echo "❌ Migration failed!"
+    exit 1
+fi
+
+echo "✅ Migrations completed successfully"
+
+# Start the application
+echo "🎯 Starting application..."
+exec bun run dist/index.js
+```
+
+**How Render Deployment Works:**
+1. GitHub Actions triggers Render deploy API
+2. Render pulls latest code from GitHub (`develop` or `main` branch)
+3. Render builds Docker image using Dockerfile
+4. `docker-entrypoint.sh` runs:
+   - Sets `NODE_ENV=production`
+   - Executes `prisma migrate deploy` (safe for production)
+   - Starts app with `bun run dist/index.js`
+5. Render's platform load balancer routes traffic to the container
+6. Health checks verify `/health` endpoint every 30 seconds
+7. SSL/TLS termination handled by Render automatically
+
+**Environment Variables** (set in Render dashboard):
+```bash
+NODE_ENV=production
+DATABASE_URL=postgresql://...
+DIRECT_URL=postgresql://...
+JWT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+FIREBASE_PROJECT_ID=...
+FIREBASE_PRIVATE_KEY=...
+FIREBASE_CLIENT_EMAIL=...
+# ... and more (see .env.example)
 ```
 
 ---
@@ -301,20 +328,28 @@ recipe-images/
 
 ### 5. Load Balancing & Scaling
 
+#### **Current Implementation (Render Platform)**
+
 | Feature | Implementation |
 |---------|----------------|
-| **Load Balancer** | Nginx (Docker Compose) |
-| **Algorithm** | Round-robin |
-| **Backend Replicas** | 3 instances |
+| **Load Balancer** | Render Platform (Managed) |
+| **SSL/TLS** | Automatic termination by Render |
+| **Backend Instances** | 1 container (single Render service) |
 | **Health Checks** | HTTP GET /health every 30s |
-| **Failure Handling** | Automatic removal from pool |
+| **Failure Handling** | Automatic container restart |
 | **Session Persistence** | Not required (stateless JWT) |
-| **Horizontal Scaling** | Add replicas in docker-compose.yml |
+| **Horizontal Scaling** | Upgrade Render plan or add services |
 
 **Current Capacity:**
-- **Concurrent Users**: 1,000+
+- **Concurrent Users**: ~500-1,000 (single container)
 - **Requests/sec**: ~100 (with rate limiting)
 - **Response Time**: <500ms (avg)
+- **Memory**: 512MB RAM (Starter plan)
+- **CPU**: 0.5 CPU cores
+
+**Scaling Options:**
+1. **Vertical Scaling**: Upgrade to Render Standard plan (2GB RAM, 1 CPU) - $25/month
+2. **Horizontal Scaling**: See "Future Deployment Options" below for docker-compose + nginx
 
 ---
 
@@ -615,9 +650,428 @@ curl https://fitrecipes-backend.onrender.com/health
 
 ---
 
+## 🚀 Future Deployment Options
+
+> **Note**: The following configurations are **NOT currently in use** but are available for future scaling needs.
+
+### Option 1: Docker Compose with Nginx Load Balancer
+
+**Use Case**: Self-hosted deployment with multiple backend replicas
+
+**Architecture Diagram**:
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        USERS2[End Users<br/>Web Browsers<br/>Mobile Devices]
+    end
+    
+    subgraph "Frontend Hosting - Vercel"
+        VERCEL2[Vercel Edge Network<br/>Global CDN<br/>SSL/TLS]
+        FRONTEND2[React 19 Application<br/>Vite 6 Build<br/>Static Assets]
+    end
+    
+    subgraph "Load Balancer"
+        NGINX[Nginx Load Balancer<br/>Round Robin<br/>Port 80/443<br/>SSL Termination]
+    end
+    
+    subgraph "Backend - Docker Compose"
+        subgraph "3 Backend Replicas"
+            APP1[Hono.js Server 1<br/>Bun Runtime<br/>Port 3000]
+            APP2[Hono.js Server 2<br/>Bun Runtime<br/>Port 3000]
+            APP3[Hono.js Server 3<br/>Bun Runtime<br/>Port 3000]
+        end
+        
+        HEALTH2[Health Checks<br/>/health endpoint<br/>30s intervals]
+    end
+    
+    subgraph "Database Layer - Supabase"
+        POSTGRES2[(PostgreSQL 15<br/>Connection Pooling<br/>Daily Backups)]
+        STORAGE2[Supabase Storage<br/>Recipe Images<br/>CDN Enabled]
+    end
+    
+    subgraph "External Services"
+        GOOGLE2[Google OAuth 2.0<br/>Social Login]
+        RESEND2[Resend API<br/>Transactional Emails]
+        FCM2[Firebase Cloud Messaging<br/>Push Notifications]
+    end
+
+    %% User Flow
+    USERS2 -->|HTTPS| VERCEL2
+    VERCEL2 --> FRONTEND2
+    FRONTEND2 -->|REST API| NGINX
+    
+    %% Load Balancing
+    NGINX -->|Balance| APP1
+    NGINX -->|Balance| APP2
+    NGINX -->|Balance| APP3
+    
+    %% Health Checks
+    NGINX --> HEALTH2
+    APP1 --> HEALTH2
+    APP2 --> HEALTH2
+    APP3 --> HEALTH2
+    
+    %% Backend to Data
+    APP1 --> POSTGRES2
+    APP2 --> POSTGRES2
+    APP3 --> POSTGRES2
+    
+    APP1 --> STORAGE2
+    APP2 --> STORAGE2
+    APP3 --> STORAGE2
+    
+    %% External Services
+    APP1 --> GOOGLE2
+    APP1 --> RESEND2
+    APP1 --> FCM2
+    
+    APP2 --> GOOGLE2
+    APP2 --> RESEND2
+    APP2 --> FCM2
+    
+    APP3 --> GOOGLE2
+    APP3 --> RESEND2
+    APP3 --> FCM2
+
+    classDef client fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef frontend fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
+    classDef loadbalancer fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
+    classDef backend fill:#ffe0b2,stroke:#e65100,stroke-width:3px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef external fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    
+    class USERS2 client
+    class VERCEL2,FRONTEND2 frontend
+    class NGINX loadbalancer
+    class APP1,APP2,APP3,HEALTH2 backend
+    class POSTGRES2,STORAGE2 database
+    class GOOGLE2,RESEND2,FCM2 external
+```
+
+**Docker Compose Configuration** (`docker-compose.yml`):
+```yaml
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    build: .
+    expose:
+      - "3000"
+    deploy:
+      replicas: 3      # 3 backend instances
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      # ... other env vars
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+```
+
+**Nginx Load Balancer** (`nginx.conf`):
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream backend {
+        # Round-robin load balancing across 3 replicas
+        server app:3000 max_fails=3 fail_timeout=30s;
+    }
+
+    server {
+        listen 80;
+        server_name your-domain.com;
+
+        location / {
+            proxy_pass http://backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+            
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+
+        location /health {
+            proxy_pass http://backend/health;
+            access_log off;
+        }
+    }
+}
+```
+
+**Deployment Commands**:
+```bash
+# Build and start all services
+docker-compose up -d --build
+
+# Scale backend to 5 replicas
+docker-compose up -d --scale app=5
+
+# View logs
+docker-compose logs -f app
+
+# Stop all services
+docker-compose down
+```
+
+**Benefits**:
+- Multiple backend instances for higher load
+- Automatic load balancing with health checks
+- Zero-downtime deployments
+- Better resource utilization
+
+**Capacity**:
+- **Concurrent Users**: 3,000+ (3 replicas)
+- **Requests/sec**: ~300
+- **Failover**: Automatic (nginx removes unhealthy containers)
+
+---
+
+### Option 2: Kubernetes Deployment
+
+**Use Case**: Large-scale production with auto-scaling and high availability
+
+**Architecture Diagram**:
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        USERS3[End Users<br/>Web Browsers<br/>Mobile Devices]
+    end
+    
+    subgraph "Frontend - Vercel"
+        VERCEL3[Vercel Edge Network<br/>Global CDN<br/>SSL/TLS]
+        FRONTEND3[React 19 Application<br/>Vite 6 Build]
+    end
+    
+    subgraph "Kubernetes Cluster"
+        subgraph "Ingress"
+            INGRESS[Ingress Controller<br/>nginx/traefik<br/>SSL/TLS Termination<br/>Load Balancing]
+        end
+        
+        subgraph "Backend Pods - HPA"
+            K8S_SVC[Kubernetes Service<br/>ClusterIP<br/>Port 80]
+            
+            POD1[Pod 1<br/>Hono.js + Bun<br/>3000]
+            POD2[Pod 2<br/>Hono.js + Bun<br/>3000]
+            POD3[Pod 3<br/>Hono.js + Bun<br/>3000]
+            PODN[Pod N<br/>Auto-scaled<br/>3-10 replicas]
+        end
+        
+        subgraph "Config & Secrets"
+            CONFIGMAP[ConfigMap<br/>App Config]
+            SECRETS[Secrets<br/>API Keys, JWT]
+        end
+        
+        HPA[Horizontal Pod Autoscaler<br/>CPU: 70%<br/>Min: 3, Max: 10]
+    end
+    
+    subgraph "Database - Supabase"
+        POSTGRES3[(PostgreSQL 15<br/>Connection Pooling<br/>Daily Backups)]
+        STORAGE3[Supabase Storage<br/>Recipe Images<br/>CDN]
+    end
+    
+    subgraph "External Services"
+        GOOGLE3[Google OAuth 2.0]
+        RESEND3[Resend API]
+        FCM3[Firebase FCM]
+    end
+    
+    subgraph "Monitoring Stack"
+        PROMETHEUS[Prometheus<br/>Metrics Collection]
+        GRAFANA[Grafana<br/>Dashboards]
+        LOKI[Loki<br/>Log Aggregation]
+    end
+
+    %% User Flow
+    USERS3 -->|HTTPS| VERCEL3
+    VERCEL3 --> FRONTEND3
+    FRONTEND3 -->|REST API| INGRESS
+    
+    %% Ingress to Service
+    INGRESS --> K8S_SVC
+    
+    %% Service to Pods
+    K8S_SVC --> POD1
+    K8S_SVC --> POD2
+    K8S_SVC --> POD3
+    K8S_SVC --> PODN
+    
+    %% Auto-scaling
+    HPA -.->|Scales| POD1
+    HPA -.->|Scales| POD2
+    HPA -.->|Scales| POD3
+    HPA -.->|Scales| PODN
+    
+    %% Config
+    POD1 --> CONFIGMAP
+    POD1 --> SECRETS
+    POD2 --> CONFIGMAP
+    POD2 --> SECRETS
+    
+    %% Pods to Database
+    POD1 --> POSTGRES3
+    POD2 --> POSTGRES3
+    POD3 --> POSTGRES3
+    PODN --> POSTGRES3
+    
+    POD1 --> STORAGE3
+    POD2 --> STORAGE3
+    
+    %% Pods to External Services
+    POD1 --> GOOGLE3
+    POD1 --> RESEND3
+    POD1 --> FCM3
+    
+    %% Monitoring
+    POD1 --> PROMETHEUS
+    POD2 --> PROMETHEUS
+    POD3 --> PROMETHEUS
+    PODN --> PROMETHEUS
+    
+    PROMETHEUS --> GRAFANA
+    POD1 --> LOKI
+    POD2 --> LOKI
+
+    classDef client fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef frontend fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
+    classDef k8s fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
+    classDef backend fill:#ffe0b2,stroke:#e65100,stroke-width:3px
+    classDef config fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef external fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    classDef monitoring fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class USERS3 client
+    class VERCEL3,FRONTEND3 frontend
+    class INGRESS,K8S_SVC,HPA k8s
+    class POD1,POD2,POD3,PODN backend
+    class CONFIGMAP,SECRETS config
+    class POSTGRES3,STORAGE3 database
+    class GOOGLE3,RESEND3,FCM3 external
+    class PROMETHEUS,GRAFANA,LOKI monitoring
+```
+
+**Kubernetes Manifests** (simplified example):
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fitrecipes-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fitrecipes-backend
+  template:
+    metadata:
+      labels:
+        app: fitrecipes-backend
+    spec:
+      containers:
+      - name: backend
+        image: your-registry/fitrecipes-backend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        # ... env vars from ConfigMap/Secret
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fitrecipes-backend
+spec:
+  selector:
+    app: fitrecipes-backend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fitrecipes-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fitrecipes-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+**Benefits**:
+- Auto-scaling based on CPU/memory/custom metrics
+- Self-healing (automatic pod restarts)
+- Rolling updates with zero downtime
+- Multi-region support
+- Advanced monitoring and observability
+
+**Estimated Capacity**:
+- **Concurrent Users**: 10,000+ (with auto-scaling)
+- **Requests/sec**: 1,000+
+- **High Availability**: 99.95%+ uptime
+
+---
+
 ## 🔗 Related Documentation
 
-- **Component Diagram**: `docs/COMPONENT_DIAGRAM.md` - Software components and code structure
+- **UML Component Diagram**: `docs/UML_COMPONENT_DIAGRAM.md` - Formal UML component structure with interfaces
+- **Application Architecture**: `docs/APPLICATION_ARCHITECTURE.md` - Complete code structure and layers
 - **API Documentation**: `docs/FRONTEND_ADMIN_CHEF_DASHBOARD_GUIDE.md` - Complete API reference
 - **Authentication Guide**: `docs/AUTHENTICATION_GUIDE.md` - Auth implementation details
 - **Deployment Guide**: `docs/DEPLOYMENT_GUIDE.md` - Step-by-step deployment instructions

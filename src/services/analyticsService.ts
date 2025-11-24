@@ -443,7 +443,9 @@ export async function getUserGrowthTrends(
   const growthRate =
     previousPeriodUsers > 0
       ? ((users.length - previousPeriodUsers) / previousPeriodUsers) * 100
-      : 0;
+      : users.length > 0
+        ? 100 // If no users before but have users now, 100% growth
+        : 0; // If no users in both periods, 0% growth
 
   return {
     trends,
