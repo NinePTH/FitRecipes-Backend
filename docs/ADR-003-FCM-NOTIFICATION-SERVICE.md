@@ -20,6 +20,6 @@
 
 6. **Device Management:** Built-in token management and automatic token refresh handling.
 
-**Decision Date:** 13 December 2025
+**Decision Date:** 30 October 2025
 
 **Author:** Easy Going
