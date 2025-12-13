@@ -51,8 +51,8 @@ COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
 # Create non-root user (but don't switch yet, entrypoint needs db access)
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 appuser --gid 1001 && \
+RUN groupadd --system --gid 1001 appgroup && \
+    useradd --system --uid 1001 --gid appgroup --shell /bin/false --home /app appuser && \
     chown -R appuser:appgroup /app
 
 EXPOSE 3000
