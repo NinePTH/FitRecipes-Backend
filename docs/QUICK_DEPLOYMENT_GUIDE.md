@@ -1,8 +1,8 @@
-# Quick Deployment Guide - Render & PostgreSQL
+# Backend Deployment Guide - Render & PostgreSQL
 
 > **Easy, step-by-step guide** to deploy FitRecipes Backend to Render with PostgreSQL
 
-**Last Updated**: December 11, 2025  
+**Last Updated**: November 5, 2025  
 **Time to Deploy**: ~30 minutes
 
 ---
@@ -508,6 +508,6 @@ After successful deployment:
 
 ---
 
-**Last Updated**: December 11, 2025  
+**Last Updated**: November 5, 2025  
 **Maintained By**: Development Team  
 **Status**: ✅ Production Ready
