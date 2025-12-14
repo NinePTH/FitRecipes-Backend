@@ -23,6 +23,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
+    "db:seed": "bun run prisma/seed.ts",
     "db:seed:users": "bun run scripts/create-test-users.ts",
     "db:seed:recipes": "bun run scripts/create-test-recipes.ts",
     "docker:build": "docker build -t fitrecipes-backend .",
